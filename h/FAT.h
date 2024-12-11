@@ -8,11 +8,12 @@ public: // temporary
 	/**
 	 * @brief Resets FAT to 0 and occupies needed blocks.
 	*/
-
 	static void clearFAT();
 	/**
 	 * @brief Resets memory to 0.
 	*/
+
+
 	static void clearMemory();
 private:
 	friend class File;
@@ -74,15 +75,31 @@ private:
 	*/
 	class OpenFilesTable {
 		friend class FAT;
+        static const uint16_t OFT_SZ = FAT::FAT_SZ;
 		typedef fat_entry_t oft_entry_row_t; // entry for row
 		typedef uint16_t oft_entry_col_t; // entry for column (real entry)
-		typedef oft_entry_col_t oft_t[FAT::FAT_SZ][2];
-		static const oft_entry_col_t OFFS_MASK = 0x01;
+        static const uint8_t OFFS_SHIFT = sizeof(oft_entry_col_t)*8/2;
+		typedef oft_entry_col_t oft_t[OFT_SZ][2]; // [block | offset_in_block] [        cursor       ]
+		static const oft_entry_col_t OFFS_MASK = 0xFF;
+
+        OpenFilesTable(){
+            for(oft_entry_col_t i = 0; i < OFT_SZ; i++) {
+                table[i][0] = i;
+                table[i][1] = (oft_entry_col_t)0;
+
+            }
+
+        }
+        /**
+         * @brief Print up to \p limit row.
+         * @param limit
+         */
+        void print(oft_entry_row_t limit = 255);
 		/**
 		 * @brief Prints \p file using a predefined format.
 		 * @param file 
 		*/
-		void print(FHANDLE file);
+		void printFHANDLE(FHANDLE file);
 		/**
 		 * @brief Occupies one free entry in the table.
 		 * @param fcb_block 
@@ -91,12 +108,13 @@ private:
 		*/
 		int set(block_address_t fcb_block, block_au_t offset_in_block);
 
-		oft_t table;
+		oft_t table{};
 		oft_entry_row_t free_entry = 0;
 	};
 
 	static OpenFilesTable oft;
-	static fat_entry_t free_blocks_head;
+    static fat_entry_t free_blocks_head;
+    static fat_entry_t free_blocks_tail;
 	static fat_t table;
 
 	/**

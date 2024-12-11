@@ -3,7 +3,8 @@
 #include <iomanip>
 #include <cstdint>
 
-uint8_t FAT::free_blocks_head = 3;
+FAT::fat_entry_t FAT::free_blocks_head = 3;
+FAT::fat_entry_t FAT::free_blocks_tail = 0xff;
 FAT::OpenFilesTable FAT::oft;
 FAT::fat_t FAT::table;
 bool FAT::initilized = false;
@@ -67,10 +68,10 @@ void FAT::init() {
 
 }
 
-void FAT::OpenFilesTable::print(FHANDLE file) {
+void FAT::OpenFilesTable::printFHANDLE(FHANDLE file) {
 	std::cout << "\n====================";
 	std::cout << std::dec << "\nFor FHANDLE: " << file << std::endl;
-	PrintHex::print((block_address_t)table[file][0] >> sizeof(block_cnt_t), "FCB block: ");
+	PrintHex::print((block_address_t)(table[file][0] >> OFFS_SHIFT), "FCB block: ");
 	std::cout << std::endl;
 	PrintHex::print(table[file][0] & OFFS_MASK, "Offset in block: ");
 	std::cout << "\n====================\n";
@@ -79,13 +80,28 @@ void FAT::OpenFilesTable::print(FHANDLE file) {
 int FAT::OpenFilesTable::set(block_address_t fcb_block, block_cnt_t offset_in_block) {
 	oft_entry_row_t entry = free_entry;
 	
-	table[entry][0] = ((oft_entry_col_t) fcb_block) << sizeof(offset_in_block)
+	table[entry][0] = ((oft_entry_col_t) fcb_block) << OFFS_SHIFT
 		| offset_in_block;
 	table[entry][1] = 0; // cursor
 
-	free_entry++;
-
+	free_entry = table[free_entry][0];
+    FAT::OpenFilesTable::print(31);
 	return entry;
+}
+
+void FAT::OpenFilesTable::print(oft_entry_row_t limit) {
+    std::cout << "\n==========OFT(Block 1B, Offset 1B, Cursor 2B)==========\n";
+    for(oft_entry_col_t i = 0; i <= limit; i++) {
+        if (i > 0 && i % 8 == 0)
+            std::cout << std::endl;
+        PrintHex::print((block_address_t)(table[i][0] >>  OFFS_SHIFT));
+        PrintHex::print(table[i][0] & OFFS_MASK);
+        PrintHex::print(table[i][1]);
+
+    }
+    if(limit != OFT_SZ-1)
+        std::cout << "...";
+    std::cout << "\n=======================================================\n";
 }
 
 // finds free blocks, allocates space, makes FCB for the file
@@ -108,7 +124,7 @@ FHANDLE FAT::open(File::filename_t name, File::FILE_EXT extension, size_t size) 
 
 
 int FAT::close(FHANDLE file) {
-	oft.print(file);
+    oft.printFHANDLE(file);
 	return 0;
 }
 
@@ -116,7 +132,7 @@ int FAT::close(FHANDLE file) {
 // invalid returns 0
 FAT::fat_entry_t FAT::find_free_blocks(block_cnt_t num) {
 	if (free_blocks_head == 0)return 0;
-	if (initilized == false)init();
+	if (!initilized)init();
 
 
 	fat_entry_t start = free_blocks_head;

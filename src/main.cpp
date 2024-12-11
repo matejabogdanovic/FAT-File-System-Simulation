@@ -25,6 +25,5 @@ int main() {
 	HDisk::get().readBlock(buffer, 0);
 	
 	PrintHex::printBlock(buffer, HDisk::BLOCK_SZ, 16);
-	
 
 }
