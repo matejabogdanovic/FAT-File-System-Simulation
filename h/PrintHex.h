@@ -2,10 +2,11 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+
 class PrintHex {
 public:
 	static void print( int val, const char* comment = "") {
-		if(comment != "")std::cout << comment << " ";
+		std::cout << comment << " ";
 		std::cout << std::setw(2) << std::setfill('0') <<
 			std::hex << val;
 		std::cout << " ";

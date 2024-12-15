@@ -1,12 +1,20 @@
 #include "../h/File.h"
 #include "../h/FAT.h"
-FHANDLE File::file_open(filename_t name, FILE_EXT extension, size_t size) {
-    
-    
-    return FAT::open(name, extension, size);
+
+File::File(filename_t name, FILE_EXT extension, size_t size){
+
+    handle =  FAT::open(name, extension, size);
 }
 
-int File::file_close(FHANDLE file) {
-    
-    return FAT::close(file);
+
+int File::close() {
+    if(closed)return 1;
+    FAT::close(handle);
+    closed = true;
+
+    return 0;
+}
+
+File::~File() {
+    close();
 }

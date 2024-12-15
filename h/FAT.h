@@ -8,7 +8,7 @@ public: // temporary
 	/**
 	 * @brief Resets FAT to 0 and occupies needed blocks.
 	*/
-	static void clearFAT();
+	static void clearFATandCONTROL();
 	/**
 	 * @brief Resets memory to 0.
 	*/
@@ -82,9 +82,11 @@ private:
 		typedef oft_entry_col_t oft_t[OFT_SZ][2]; // [block | offset_in_block] [        cursor       ]
 		static const oft_entry_col_t OFFS_MASK = 0xFF;
 
+        static const auto FREE_V_SZ = OFT_SZ/(sizeof(uint64_t)*8);
+
         OpenFilesTable(){
             for(oft_entry_col_t i = 0; i < OFT_SZ; i++) {
-                table[i][0] = i;
+                table[i][0] = i+1;
                 table[i][1] = (oft_entry_col_t)0;
 
             }
@@ -99,7 +101,7 @@ private:
 		 * @brief Prints \p file using a predefined format.
 		 * @param file 
 		*/
-		void printFHANDLE(FHANDLE file);
+		void printFHANDLE(File::FHANDLE file);
 		/**
 		 * @brief Occupies one free entry in the table.
 		 * @param fcb_block 
@@ -107,15 +109,23 @@ private:
 		 * @return index of occupied entry
 		*/
 		int set(block_address_t fcb_block, block_au_t offset_in_block);
+        /**
+         * @brief
+         * @return negative if no free entries
+         */
+        int take_free_entry();
+
+        void free_entry(File::FHANDLE fhandle);
 
 		oft_t table{};
-		oft_entry_row_t free_entry = 0;
+		uint64_t free_vector[FREE_V_SZ] = {0};
 	};
 
 	static OpenFilesTable oft;
     static fat_entry_t free_blocks_head;
     static fat_entry_t free_blocks_tail;
 	static fat_t table;
+    static HDisk::block_t control; // [0] = free_blocks_head
 
 	/**
 	 * @brief 
@@ -124,22 +134,22 @@ private:
 	 * @param size 
 	 * @return 
 	*/
-	static FHANDLE open(File::filename_t name, File::FILE_EXT extension, size_t size);
+	static File::FHANDLE open(File::filename_t name, File::FILE_EXT extension, size_t size=1);
 	/**
 	 * @brief 
 	 * @param file 
 	 * @return 
 	*/
-	static int close(FHANDLE file);
+	static int close(File::FHANDLE file);
 
 	/**
 	 * @brief Allocates given number of blocks.
 	 * @param num number of blocks to allocate
 	 * @return 0 if no space
 	*/
-	static fat_entry_t find_free_blocks(block_cnt_t num);
+	static fat_entry_t take_free_blocks(block_cnt_t num);
 
-
+    static void free_blocks(block_address_t start, block_cnt_t num);
 	
 
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-typedef int16_t FHANDLE;
+
 
 class File {
 public:
@@ -10,9 +10,21 @@ public:
 	enum FILE_EXT : uint8_t {
 		MB = 0xfe
 	};
-	// If -1, then error
-	static FHANDLE file_open(filename_t name, FILE_EXT extension, size_t size);
-	static int file_close(FHANDLE file);
-	
+    File(filename_t name, FILE_EXT extension, size_t size);
+    int close();
+    // copy
+    //File(const File&);
+   // File& operator=(const File&);
+    // move
+   // File(File&&);
+    //File& operator=(File&&);
+    ~File();
+
+
+private:
+    friend class FAT;
+    typedef int16_t FHANDLE;
+    bool closed = false;
+    FHANDLE handle;
 };
 
