@@ -10,7 +10,7 @@ HDisk::HDisk() {
     std::cout << "Disk opened.\n";
 }
 
-int HDisk::readBlock(block_t buf, block_address_t blck_num) {
+int HDisk::readBlock(block_t buf, adisk_t blck_num) {
     fseek(disk, blck_num * BLOCK_SZ, SEEK_SET);
 
     std::cout << std::dec << "Read " << fread(buf, sizeof(uint8_t), BLOCK_SZ, disk) 
@@ -18,7 +18,7 @@ int HDisk::readBlock(block_t buf, block_address_t blck_num) {
     return 0;
 }
 
-int HDisk::writeBlock(block_t buf, block_address_t blck_num) {
+int HDisk::writeBlock(block_t buf, adisk_t blck_num) {
     fseek(disk, blck_num * BLOCK_SZ, SEEK_SET);
 
     std::cout << std::dec << "Written " << fwrite(buf, sizeof(uint8_t), BLOCK_SZ, disk)

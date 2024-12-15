@@ -1,15 +1,12 @@
 #pragma once
 #include <cstdint>
-
+#include "TypesAndConstants.h"
 
 
 class File {
 public:
-	static const uint8_t FILE_NAME_SZ = 16;
-	typedef const char filename_t[FILE_NAME_SZ];
-	enum FILE_EXT : uint8_t {
-		MB = 0xfe
-	};
+
+
     File(filename_t name, FILE_EXT extension, size_t size);
     int close();
     // copy
@@ -22,8 +19,6 @@ public:
 
 
 private:
-    friend class FAT;
-    typedef int16_t FHANDLE;
     bool closed = false;
     FHANDLE handle;
 };

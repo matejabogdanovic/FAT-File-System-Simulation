@@ -14,12 +14,12 @@
 int main() {
 
 	std::cout << "File system init.\n";
-    FAT::clearFATandCONTROL();
+    FAT::clearFileSystem();
 	//FAT::clearMemory();
-	HDisk::block_t buffer;
+	block_t buffer;
 //
-	File* f = new File("Ime", File::FILE_EXT::MB, 1);
-    File* f2= new File("Ime2", File::FILE_EXT::MB, 1);
+	File* f = new File("Ime", FILE_EXT::MB, 1);
+    File* f2= new File("Ime2", FILE_EXT::MB, 1);
 //	//std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
    delete f2;
@@ -27,10 +27,12 @@ int main() {
 
 	HDisk::get().readBlock(buffer, 0);
 	
-	PrintHex::printBlock(buffer, HDisk::BLOCK_SZ, 16);
+	PrintHex::printBlock(buffer, BLOCK_SZ, 16);
     std::cout << std::endl;
     HDisk::get().readBlock(buffer, 1);
 
-    PrintHex::printBlock(buffer, HDisk::BLOCK_SZ, 16);
+    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
 
 }
+
+

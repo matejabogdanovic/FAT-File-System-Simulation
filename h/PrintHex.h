@@ -1,4 +1,5 @@
 #pragma once
+#include "TypesAndConstants.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -13,7 +14,7 @@ public:
 		
 	}
 
-	static void printBlock(HDisk::block_t buf, int size ,int width, int start = 0) {
+	static void printBlock(block_t buf, int size ,int width, int start = 0) {
 		for (int i = start; i < size; i++) {
 			if (i > 0 && i %  width == 0)
 				std::cout << std::endl;
