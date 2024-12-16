@@ -33,6 +33,8 @@ public:
 private:
     friend class FAT;
 
+    friend class DirectorySystem;
+
     /**
      * @brief Populates \p buf with given parameters.
      * @param buf

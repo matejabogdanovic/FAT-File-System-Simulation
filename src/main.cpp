@@ -14,24 +14,23 @@
 
 int main() {
 
-
     std::cout << "File system init.\n";
     FAT::clearFAT();
     //FAT::clearMemory();
     block_t buffer;
-//
+    //
     File *f = new File("Ime", FILE_EXT::MB, 300);
     File *f2 = new File("Ime2", FILE_EXT::MB, 1);
-//std::cout << std::dec << "FILE HANDLE: " << f;
+    //std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
     delete f2;
 
 
-    HDisk::get().readBlock(buffer, 0);
+    HDisk::get().readBlock(buffer, FAT_BLK);
 
     PrintHex::printBlock(buffer, BLOCK_SZ, 16);
     std::cout << std::endl;
-    HDisk::get().readBlock(buffer, 1);
+    HDisk::get().readBlock(buffer, CONTROL_BLK);
 
     PrintHex::printBlock(buffer, BLOCK_SZ, 16);
 }

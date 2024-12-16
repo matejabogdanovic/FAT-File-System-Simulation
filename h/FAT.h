@@ -15,8 +15,7 @@ public: // temporary
 
 private:
     friend class DirectorySystem;
-
-    //static bool initilized;
+    
     /**
      * @brief Reads FAT and Control blocks from disk and initializes class fields.
     */

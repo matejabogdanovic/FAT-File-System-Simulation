@@ -2,47 +2,62 @@
 #include "../h/PrintHex.h"
 #include "../h/HDisk.h"
 
-DirectorySystem::Directory *DirectorySystem::root = nullptr;
-bool DirectorySystem::initilized = false;
+DirectorySystem::Inode *DirectorySystem::root = nullptr;
+bool DirectorySystem::initialized = false;
 
-DirectorySystem::~DirectorySystem() { // TODO:
+DirectorySystem::~DirectorySystem() { // TODO: Deallocate structures
     delete root;
 }
 
-void DirectorySystem::init() { // TODO:
+void DirectorySystem::init() { // TODO: Allocate the structure
     FAT::init();
-    //root = new Directory(new FCB("root"));
 
-    //new FCB("root", DIR, 69, 0, 0, 0);
-    // fcb_t fcb;
-    //populateFCB(fcb, "root", DIR, 69, 0, 0, 0);
+    FileControlBlock::fcb_t fcb = {0};
     block_t block = {0};
-    // memcpy(block, fcb, sizeof(fcb));
-
 
     HDisk::get().readBlock(block, ROOT_BLK);
+
     PrintHex::printBlock(block, BLOCK_SZ, 16);
 
-    //new FCB{block};
+    memcpy(fcb, block, sizeof(fcb));
+    root = Inode::make_node(block);
 
-    initilized = true;
+    initialized = true;
 }
 
 FHANDLE DirectorySystem::open(filename_t name, FILE_EXT extension, size_t size) {
-    if(!initilized)init();
+    if(!initialized)init();
     return FAT::open(name, extension, size);
 }
 
 int DirectorySystem::close(FHANDLE file) {
-    if(!initilized)return -1;
+    if(!initialized)return -1;
     return FAT::close(file);
 }
 
-DirectorySystem::Directory::Directory(FileControlBlock::FCB *fcb, DirectorySystem::Directory *left,
-                                      DirectorySystem::Directory *right)
+void DirectorySystem::clearRoot() {
+    FileControlBlock::fcb_t fcb;
+    FileControlBlock::populateFCB(fcb, "root", DIR, 69, 0, 0, 0);
+    HDisk::get().writeBlock(fcb, ROOT_BLK);
+}
+
+DirectorySystem::Inode::Inode(FileControlBlock::FCB *fcb, DirectorySystem::Inode *left,
+                              DirectorySystem::Inode *right)
         : fcb(fcb), left(left), right(right) {
 }
 
-DirectorySystem::Directory::~Directory() {
+DirectorySystem::Inode::~Inode() {
     delete fcb;
+}
+
+DirectorySystem::Inode *DirectorySystem::Inode::make_node(FileControlBlock::fcb_t fcb) {
+
+    auto *f = (FileControlBlock::FCB *) fcb;
+    auto *dir = new Inode(
+            new FileControlBlock::FCB(
+                    *f
+            )
+    );
+
+    return dir;
 }

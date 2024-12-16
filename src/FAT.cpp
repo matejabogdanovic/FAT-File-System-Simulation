@@ -8,15 +8,12 @@ fat_entry_t FAT::free_blocks_head = 3;
 fat_entry_t FAT::free_blocks_tail = 0xff;
 fat_t FAT::table;
 block_t FAT::control = {0};
-//bool FAT::initilized = false;
 
 void FAT::init() {
 
     HDisk::get().readBlock(table, FAT_BLK);
     HDisk::get().readBlock(control, CONTROL_BLK);
     free_blocks_head = control[0];
-    //initilized = true;
-
 }
 
 // finds free blocks, allocates space, makes FCB for the file
