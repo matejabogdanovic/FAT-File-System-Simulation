@@ -1,8 +1,9 @@
-#include "../h/FAT.h"
+#include "../h/DirectorySystem.h"
+#include "../h/HDisk.h"
+#include "../h/File.h"
 #include "../h/PrintHex.h"
-#include <iostream>
-#include <iomanip>
-#include <cstdint>
+
+
 /*
 * This is a FAT simulation. Entry - 8bit, 2^8 blocks. Each block is 2^8*1B.
 * File harddisk.txt represents disk. 
@@ -14,13 +15,13 @@
 int main() {
 
 	std::cout << "File system init.\n";
-    FAT::clearFileSystem();
+    FAT::clearFAT();
 	//FAT::clearMemory();
 	block_t buffer;
 //
-	File* f = new File("Ime", FILE_EXT::MB, 1);
+	File* f = new File("Ime", FILE_EXT::MB, 300);
     File* f2= new File("Ime2", FILE_EXT::MB, 1);
-//	//std::cout << std::dec << "FILE HANDLE: " << f;
+//std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
    delete f2;
 

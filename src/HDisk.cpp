@@ -1,8 +1,5 @@
 #include "../h/HDisk.h"
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-
+#include "../h/PrintHex.h"
 
 HDisk::HDisk() {
     fopen_s(&disk, "../src/harddisk.txt", "r+b");

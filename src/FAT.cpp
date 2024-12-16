@@ -1,23 +1,21 @@
 #include "../h/FAT.h"
-#include "FCB.cpp"
-#include <iostream>
-#include <iomanip>
-#include <cstdint>
-
+#include "../h/PrintHex.h"
+#include "../h/HDisk.h"
+#include "../h/FileControlBlock.h"
 
 OpenFilesTable FAT::oft;
 fat_entry_t FAT::free_blocks_head = 3;
 fat_entry_t FAT::free_blocks_tail = 0xff;
 fat_t FAT::table;
 block_t FAT::control = {0};
-bool FAT::initilized = false;
+//bool FAT::initilized = false;
 
 void FAT::init() {
 
 	HDisk::get().readBlock(table, FAT_BLK);
     HDisk::get().readBlock(control, CONTROL_BLK);
     free_blocks_head = control[0];
-	initilized = true;
+	//initilized = true;
 
 }
 
@@ -32,10 +30,10 @@ FHANDLE FAT::open(filename_t name, FILE_EXT extension, size_t size) {
 	if (entry_index == 0)return -2;
 
 
-	fcb_t buf;
-	populateFCB(buf, name, extension, data_size, entry_index);
+    FileControlBlock::fcb_t buf;
+	FileControlBlock::populateFCB(buf, name, extension, data_size, entry_index);
 
-	printFCB(buf);
+    FileControlBlock::printFCB(buf);
 	
 	return oft.set(entry_index, 0); // TODO: implement offset_in_block
 }
@@ -63,7 +61,7 @@ int FAT::close(FHANDLE file) {
 // invalid returns 0
 fat_entry_t FAT::take_blocks(block_cnt_t num) {
 	if (free_blocks_head == 0)return 0;
-	if (!initilized)init();
+	//if (!initilized)init();
 
 
 	fat_entry_t start = free_blocks_head, last = free_blocks_head;
@@ -87,7 +85,7 @@ void FAT::release_blocks(adisk_t start, block_cnt_t num) {
 
 }
 
-void FAT::clearFileSystem() {
+void FAT::clearFAT() {
 	uint8_t buf[BLOCK_SZ];
 	control[0] = 3;
 

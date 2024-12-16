@@ -10,6 +10,10 @@ typedef char_t block_t[BLOCK_SZ];
 typedef uint16_t dchar_t; // double char
 typedef uint8_t block_cnt_t;
 
+
+static const adisk_t FAT_BLK = 0;
+static const adisk_t CONTROL_BLK = 1;
+static const adisk_t ROOT_BLK = 2;
 // FAT
 static const auto FAT_SZ = BLOCK_SZ;
 
@@ -20,10 +24,13 @@ typedef fat_entry_t fat_t[FAT_SZ];
 static const uint8_t FILE_NAME_SZ = 16;
 typedef const char filename_t[FILE_NAME_SZ];
 enum FILE_EXT : uint8_t {
-    MB = 0xfe
+    MB = 0xfe,
+    DIR = 0x01
 };
 typedef int16_t FHANDLE;
 
+
+// FCB
 
 
 // OFT

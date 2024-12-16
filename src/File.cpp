@@ -1,15 +1,16 @@
 #include "../h/File.h"
-#include "../h/FAT.h"
+#include "../h/DirectorySystem.h"
+
 
 File::File(filename_t name, FILE_EXT extension, size_t size){
 
-    handle =  FAT::open(name, extension, size);
+    handle =  DirectorySystem::open(name, extension, size);
 }
 
 
 int File::close() {
     if(closed)return 1;
-    FAT::close(handle);
+    DirectorySystem::close(handle);
     closed = true;
 
     return 0;

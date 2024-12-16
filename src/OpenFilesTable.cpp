@@ -1,4 +1,5 @@
 #include "../h/OpenFilesTable.h"
+#include "../h/PrintHex.h"
 
 void OpenFilesTable::printFHANDLE(FHANDLE file) {
     std::cout << "\n====================";

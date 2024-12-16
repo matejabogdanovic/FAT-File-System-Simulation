@@ -1,5 +1,7 @@
+#include "../h/FileControlBlock.h"
+#include "../h/PrintHex.h"
 
-void printFCB(fcb_t buf) {
+void FileControlBlock::printFCB(fcb_t buf) {
 
     std::cout << "\n====================";
     std::cout << "\nFile name: ";
@@ -12,11 +14,13 @@ void printFCB(fcb_t buf) {
     std::cout << "\n====================\n";
 }
 
-void populateFCB(fcb_t buf,
+void FileControlBlock::populateFCB(fcb_t buf,
                       filename_t name,
                       FILE_EXT extension,
                       block_cnt_t data_size,
-                      fat_entry_t entry_index) {
+                      fat_entry_t entry_index,
+                      adisk_t left,
+                      adisk_t right) {
     bool name_finished = false;
     size_t i = 0;
     for (size_t j = 0; j < sizeof(FCB::name); j++, i++) {
@@ -38,20 +42,18 @@ void populateFCB(fcb_t buf,
 
     }
     for (size_t j = 0; j < sizeof(FCB::left); j++, i++) {
-        buf[i] = 1;
+        buf[i] = left;
 
     }
     for (size_t j = 0; j < sizeof(FCB::right); j++, i++) {
-        buf[i] = 2;
+        buf[i] = right;
 
     }
     for (size_t j = 0; j < sizeof(FCB::padding); j++, i++) {
-        buf[i] = 15;
+        buf[i] = 0;
 
     }
 }
-
-
 
 
 

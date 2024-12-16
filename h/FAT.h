@@ -1,8 +1,4 @@
 #pragma once
-#include "HDisk.h"
-#include "File.h"
-#include "PrintHex.h"
-#include "FCB.h"
 #include "OpenFilesTable.h"
 
 class FAT {
@@ -10,7 +6,7 @@ public: // temporary
 	/**
 	 * @brief Resets FAT to 0 and occupies needed blocks.
 	*/
-	static void clearFileSystem();
+	static void clearFAT();
 	/**
 	 * @brief Resets memory to 0.
 	*/
@@ -18,17 +14,9 @@ public: // temporary
 
 	static void clearMemory();
 private:
-	friend class File;
+	friend class DirectorySystem;
 
-
-	/* const */
-
-	static const adisk_t FAT_BLK = 0;
-	static const adisk_t CONTROL_BLK = 1;
-	static const adisk_t ROOT_BLK = 2;
-
-
-	static bool initilized;
+	//static bool initilized;
 	/**
 	 * @brief Reads FAT and Control blocks from disk and initializes class fields.
 	*/
