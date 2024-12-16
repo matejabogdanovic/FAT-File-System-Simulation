@@ -4,14 +4,15 @@
 class File {
 public:
 
-
     File(filename_t name, FILE_EXT extension, size_t size);
+
     int close();
+
     // copy
     //File(const File&);
-   // File& operator=(const File&);
+    // File& operator=(const File&);
     // move
-   // File(File&&);
+    // File(File&&);
     //File& operator=(File&&);
     ~File();
 
