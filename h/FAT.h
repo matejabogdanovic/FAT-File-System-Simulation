@@ -15,33 +15,21 @@ public: // temporary
 
 private:
     friend class DirectorySystem;
-    
+
     /**
      * @brief Reads FAT and Control blocks from disk and initializes class fields.
     */
     static void init();
 
-    static OpenFilesTable oft;
     static fat_entry_t free_blocks_head;
     static fat_entry_t free_blocks_tail;
     static fat_t table;
     static block_t control; // [0] = free_blocks_head
 
     /**
-     * @brief
-     * @param name
-     * @param extension
-     * @param size
-     * @return
-    */
-    static FHANDLE open(filename_t name, FILE_EXT extension, size_t size = 1);
-
-    /**
-     * @brief
-     * @param file
-     * @return
-    */
-    static int close(FHANDLE file);
+     * @brief Writes FAT table and control block to disk.
+     */
+    static void saveToDisk();
 
     /**
      * @brief Allocates given number of blocks.

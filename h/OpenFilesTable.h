@@ -1,5 +1,4 @@
 #pragma once
-
 #include "TypesAndConstants.h"
 
 class OpenFilesTable {

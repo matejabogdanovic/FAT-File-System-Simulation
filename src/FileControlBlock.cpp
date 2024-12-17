@@ -14,13 +14,16 @@ void FileControlBlock::printFCB(fcb_t buf) {
     std::cout << "\n====================\n";
 }
 
+// TODO: Do with memcpy
 void FileControlBlock::populateFCB(fcb_t buf,
                                    filename_t name,
                                    FILE_EXT extension,
                                    block_cnt_t data_size,
                                    fat_entry_t entry_index,
-                                   adisk_t left,
-                                   adisk_t right) {
+                                   adisk_t child,
+                                   adisk_t bro,
+                                   char_t child_offs,
+                                   char_t bro_offs) {
     bool name_finished = false;
     size_t i = 0;
     for(size_t j = 0; j < sizeof(FCB::name); j++, i++) {
@@ -37,11 +40,17 @@ void FileControlBlock::populateFCB(fcb_t buf,
     for(size_t j = 0; j < sizeof(FCB::entry); j++, i++) {
         buf[i] = entry_index;
     }
-    for(size_t j = 0; j < sizeof(FCB::left); j++, i++) {
-        buf[i] = left;
+    for(size_t j = 0; j < sizeof(FCB::child); j++, i++) {
+        buf[i] = child;
     }
-    for(size_t j = 0; j < sizeof(FCB::right); j++, i++) {
-        buf[i] = right;
+    for(size_t j = 0; j < sizeof(FCB::bro); j++, i++) {
+        buf[i] = bro;
+    }
+    for(size_t j = 0; j < sizeof(FCB::child_offs); j++, i++) {
+        buf[i] = child_offs;
+    }
+    for(size_t j = 0; j < sizeof(FCB::bro_offs); j++, i++) {
+        buf[i] = bro_offs;
     }
     for(size_t j = 0; j < sizeof(FCB::padding); j++, i++) {
         buf[i] = 0;

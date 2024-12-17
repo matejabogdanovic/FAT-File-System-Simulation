@@ -1,9 +1,7 @@
 #include "../h/FAT.h"
 #include "../h/PrintHex.h"
 #include "../h/HDisk.h"
-#include "../h/FileControlBlock.h"
 
-OpenFilesTable FAT::oft;
 fat_entry_t FAT::free_blocks_head = 3;
 fat_entry_t FAT::free_blocks_tail = 0xff;
 fat_t FAT::table;
@@ -16,40 +14,12 @@ void FAT::init() {
     free_blocks_head = control[0];
 }
 
-// finds free blocks, allocates space, makes FCB for the file
-// returns an entry from table of open files
-FHANDLE FAT::open(filename_t name, FILE_EXT extension, size_t size) {
-    if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -1;
-
-    block_cnt_t data_size = (size + BLOCK_SZ - 1) / BLOCK_SZ;
-    fat_entry_t entry_index = take_blocks(data_size);
-    if(entry_index == 0)return -2;
-
-
-    FileControlBlock::fcb_t buf;
-    FileControlBlock::populateFCB(buf, name, extension, data_size, entry_index);
-
-    FileControlBlock::printFCB(buf);
-
-    return oft.set(entry_index, 0); // TODO: implement offset_in_block
-}
-
-int FAT::close(FHANDLE file) {
-
-    std::cout << "\n=====CLOSING=====";
-    std::cout << "\n=====FREE OFT=====\n";
-    oft.release_entry(file);
+void FAT::saveToDisk() {
     std::cout << "\n=====FAT=>DISK[0]=====\n";
     HDisk::get().writeBlock(table, FAT_BLK);
     std::cout << "\n=====CONTROL=>DISK[1]=====\n";
     control[0] = free_blocks_head;
     HDisk::get().writeBlock(control, CONTROL_BLK);
-    oft.printFHANDLE(file);
-//    std::cout << "\n=====CLOSED=====\n FHANDLE: " << file << "\n FAT: \n";
-//
-//    PrintHex::printBlock(table, 256, 16);
-//    std::cout << "\n================\n";
-    return 0;
 }
 
 // returns index in FAT of the first free block
@@ -76,7 +46,7 @@ fat_entry_t FAT::take_blocks(block_cnt_t num) {
     return start;
 }
 
-void FAT::release_blocks(adisk_t start, block_cnt_t num) {
+void FAT::release_blocks(adisk_t start, block_cnt_t num) { // TODO: implement
 }
 
 void FAT::clearFAT() {
