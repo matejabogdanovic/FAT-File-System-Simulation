@@ -5,7 +5,7 @@ void FileControlBlock::printFCB(fcb_t buf) {
 
     std::cout << "\n====================";
     std::cout << "\nFile name: ";
-    for(size_t i = 0; i < sizeof(FCB::name); i++) {
+    for(size_t i = 0; i < sizeof(FCB::path); i++) {
         if(buf[i] != '\0')std::cout << buf[i];
     }
 
@@ -16,7 +16,7 @@ void FileControlBlock::printFCB(fcb_t buf) {
 
 // TODO: Do with memcpy
 void FileControlBlock::populateFCB(fcb_t buf,
-                                   filename_t name,
+                                   pathname_t path,
                                    FILE_EXT extension,
                                    block_cnt_t data_size,
                                    fat_entry_t entry_index,
@@ -24,12 +24,12 @@ void FileControlBlock::populateFCB(fcb_t buf,
                                    adisk_t bro,
                                    char_t child_offs,
                                    char_t bro_offs) {
-    bool name_finished = false;
+    bool path_finished = false;
     size_t i = 0;
-    for(size_t j = 0; j < sizeof(FCB::name); j++, i++) {
+    for(size_t j = 0; j < sizeof(FCB::path); j++, i++) {
 
-        if(name[i] == '\0')name_finished = true;
-        buf[i] = (name_finished ? 0 : name[i]);
+        if(path[i] == '\0')path_finished = true;
+        buf[i] = (path_finished ? 0 : path[i]);
     }
     for(size_t j = 0; j < sizeof(FCB::ext); j++, i++) {
         buf[i] = extension;

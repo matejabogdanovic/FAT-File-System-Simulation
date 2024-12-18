@@ -17,8 +17,9 @@ static const auto FAT_SZ = BLOCK_SZ;
 typedef adisk_t fat_entry_t;
 typedef fat_entry_t fat_t[FAT_SZ];
 //FILE
-static const uint8_t FILE_NAME_SZ = 16;
-typedef const char filename_t[FILE_NAME_SZ];
+static const uint8_t PATH_NAME_SZ = 16;
+typedef char filename_t[PATH_NAME_SZ];
+typedef const char pathname_t[PATH_NAME_SZ];
 enum FILE_EXT : uint8_t {
     MB = 0xfe,
     DIR = 0x01

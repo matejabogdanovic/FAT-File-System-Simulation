@@ -4,7 +4,7 @@
 class File {
 public:
 
-    File(filename_t name, FILE_EXT extension, size_t size);
+    File(pathname_t path, FILE_EXT extension, size_t size);
 
     int close();
 

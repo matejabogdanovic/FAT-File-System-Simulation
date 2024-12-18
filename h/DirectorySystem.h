@@ -16,12 +16,12 @@ private:
 
     /**
      * @brief
-     * @param name
+     * @param path
      * @param extension
      * @param size
      * @return
      */
-    static FHANDLE open(filename_t name, FILE_EXT extension, size_t size);
+    static FHANDLE open(pathname_t path, FILE_EXT extension, size_t size);
 
     /**
      * @brief Saves cached FAT structures to disk and releases OFT entry taken by \p file.

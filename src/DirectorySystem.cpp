@@ -2,6 +2,7 @@
 #include "../h/PrintHex.h"
 #include "../h/HDisk.h"
 
+
 Inode *DirectorySystem::root = nullptr;
 bool DirectorySystem::initialized = false;
 OpenFilesTable DirectorySystem::oft;
@@ -27,7 +28,7 @@ void DirectorySystem::init() { // TODO: Allocate the structure
 }
 
 // TODO:
-FHANDLE DirectorySystem::open(filename_t name, FILE_EXT extension, size_t size) {
+FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) {
     if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -1;
     if(!initialized)init();
 
@@ -38,9 +39,13 @@ FHANDLE DirectorySystem::open(filename_t name, FILE_EXT extension, size_t size) 
 
 
     FileControlBlock::fcb_t buf;
-    FileControlBlock::populateFCB(buf, name, extension, data_size, entry_index);
-
+    FileControlBlock::populateFCB(buf, path, extension, data_size, entry_index);
+    std::cout << "OPENING FILE\n";
     FileControlBlock::printFCB(buf);
+    std::cout << "LINKING\n";
+    Inode *prev;
+
+    std::cout << std::dec << Inode::add(root, Inode::make_node(buf), &prev);
 
     return oft.set(entry_index, 0);
 }
@@ -65,8 +70,10 @@ int DirectorySystem::close(FHANDLE file) {
 void DirectorySystem::clearRoot() { // TODO: not tested
     block_t block = {0};
     FileControlBlock::fcb_t fcb;
-    FileControlBlock::populateFCB(fcb, "root", DIR, 69, 0, 0, 0, 0, 0);
+    FileControlBlock::populateFCB(fcb, "/", DIR, 69, 0, 0, 0, 0, 0);
     memcpy(block, fcb, sizeof(fcb));
     HDisk::get().writeBlock(block, ROOT_BLK);
 }
+
+
 

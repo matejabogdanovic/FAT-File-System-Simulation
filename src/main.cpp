@@ -23,6 +23,8 @@
 // TODO: Change filename_t
 // TODO: OFT offset ne treba? treba valjda da ima pokazivac na inode u kome je fcb, preko fcb se dodje do adrese na disku
 // u koju se upisuje ili odakle se cita, da ne mora da se zna adresa na disku gde je, vec samo preko inode
+#include <cstring>
+
 int main() {
 
     std::cout << "File system init.\n";
@@ -30,8 +32,8 @@ int main() {
     //FAT::clearMemory();
     block_t buffer;
     //
-    File *f = new File("Ime", FILE_EXT::MB, 300);
-    File *f2 = new File("Ime2", FILE_EXT::MB, 1);
+    File *f = new File("/Ime", FILE_EXT::DIR, 300);
+    File *f2 = new File("/Ime/Ime/ex", FILE_EXT::MB, 1);
     //std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
     delete f2;

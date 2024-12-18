@@ -6,7 +6,7 @@ class FileControlBlock {
 public:
     struct FCB { // 32 chars => 8 FCBs in ONE block
 
-        char name[FILE_NAME_SZ] = {0};
+        char path[PATH_NAME_SZ] = {0};
         FILE_EXT ext;
         block_cnt_t data_size;
         fat_entry_t entry;
@@ -40,13 +40,13 @@ private:
     /**
      * @brief Populates \p buf with given parameters.
      * @param buf
-     * @param name
+     * @param path
      * @param extension
      * @param data_size
      * @param entry_index
     */
     static void populateFCB(fcb_t buf,
-                            filename_t name,
+                            pathname_t path,
                             FILE_EXT extension,
                             block_cnt_t data_size,
                             fat_entry_t entry_index,

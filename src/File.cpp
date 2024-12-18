@@ -2,8 +2,8 @@
 #include "../h/DirectorySystem.h"
 
 
-File::File(filename_t name, FILE_EXT extension, size_t size) {
-    handle = DirectorySystem::open(name, extension, size);
+File::File(pathname_t path, FILE_EXT extension, size_t size) {
+    handle = DirectorySystem::open(path, extension, size);
 }
 
 int File::close() {
