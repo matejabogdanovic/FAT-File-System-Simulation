@@ -24,11 +24,10 @@ Inode *Inode::make_node(FileControlBlock::fcb_t fcb) {
 }
 
 // TODO: split by / and make sure that it's in order
-// level order search
 int Inode::add(Inode *root, Inode *node, Inode **link_to) {
-    if(!node || !root || !link_to)return -1;
-    if(!node->fcb)return -2;
-    if(node->fcb->path[0] != '/')return -3;
+    if(!node || !root || !link_to)return -10;
+    if(!node->fcb)return -20;
+
 
     char token[PATH_NAME_SZ] = {0};
     char pathstr[PATH_NAME_SZ] = {0};
@@ -42,14 +41,26 @@ int Inode::add(Inode *root, Inode *node, Inode **link_to) {
     while(head) {
         prev = head;
         if(!strcmp(head->fcb->path, token)) { // found
-            if(head->fcb->ext != DIR)return -5; // INVALID PATHNAME, File already exists or used filename as pathname
+            if(head->fcb->ext == node->fcb->ext && !strcmp(head->fcb->path, node->fcb->path)) {
+                *link_to = head;
+                return 2; // FILE ALREADY EXISTS
+            }
 
-            if(strcmp(head->fcb->path, "/") == 0) {
+            if(head->fcb->ext != DIR) {
+                link_with_parent = false;
+                head = head->bro; // check next file in current directory
+                continue;
+            }
+
+            // return -5; // INVALID PATHNAME, (File already exists or) used filename as pathname
+
+            if(strcmp(head->fcb->path, "/") == 0) { // TODO: optimize
                 // if it's root folder, start with string tokenization
                 next_folder = strtok(pathstr, "/");
             } else {
                 strcat(token, "/");
                 next_folder = strtok(NULL, "/");
+                if(!next_folder)break; //TODO problem?
             }
 
             strcat(token, next_folder);
@@ -61,11 +72,7 @@ int Inode::add(Inode *root, Inode *node, Inode **link_to) {
             head = head->bro; // check next file in current directory
         }
     }
-    //auto name = strtok(pathstr, "/");
-    // if name == null then the path is found
-    // if name is not null,
-    if(strtok(NULL, "/"))return -4; // INVALID PATH NAME, didn't find wanted path
-    //if(!strcmp(token, prev->fcb->path))return -5; // ALREADY EXISTS
+    if(strtok(NULL, "/"))return -40; // INVALID PATH NAME, didn't find wanted path
     if(link_with_parent) {
         prev->child = node;
     } else {
@@ -75,47 +82,5 @@ int Inode::add(Inode *root, Inode *node, Inode **link_to) {
     // return values
     *link_to = prev;
     return link_with_parent;
-//    while(token != NULL) {
-//        std::cout << token << std::endl;
-//        token = strtok(NULL, "/");
-//    }
-//    Queue<Inode *> queue;
-//    Inode *head = nullptr;
-//
-//    queue.addLast(root);
-//    queue.addLast(nullptr);
-//
-//    unsigned level = 1;
-//    bool level_switched = true;
-//    while(queue.size()) {
-//        if(queue.peekFirst() == nullptr) {
-//            queue.removeFirst(); // remove nullptr
-//            if(!queue.size()) // no more nodes to visit
-//                break;
-//            level++;
-//            level_switched = true;
-//            queue.addLast(nullptr);
-//            continue;
-//        }
-//
-//        head = queue.removeFirst();
-//
-//        if(!strcmp(head->fcb->path, token)) { // found
-//            if(!head->child) { // needs to be last folder
-//                auto name = strtok(NULL, "/"); // needs to be filename
-//                if(strtok(NULL, "/") != nullptr)return -4; // INVALID PATH NAME
-//            }
-//            queue.clear();
-//            level_switched = true;
-//        }
-//
-//        // visit
-//
-//        if(level_switched) { // only the 1st one from a new level enters here
-//            level_switched = false;
-//            while(true) {
-//            }
-//        }
-//    }
 }
 

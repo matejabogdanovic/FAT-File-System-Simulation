@@ -46,7 +46,7 @@ fat_entry_t FAT::take_blocks(block_cnt_t num) {
     return start;
 }
 
-void FAT::release_blocks(adisk_t start, block_cnt_t num) { // TODO: implement
+void FAT::release_blocks(adisk_t start, block_cnt_t num) { // TODO: implement URGENT
 }
 
 void FAT::clearFAT() {

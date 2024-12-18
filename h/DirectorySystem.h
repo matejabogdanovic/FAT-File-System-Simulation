@@ -9,6 +9,11 @@ public:
      */
     static void clearRoot();
 
+    /**
+     * @brief Prints file system tree starting from root directory.
+     */
+    static void printTree();
+
     ~DirectorySystem();
 
 private:

@@ -29,14 +29,24 @@ int main() {
 
     std::cout << "File system init.\n";
     FAT::clearFAT();
+    //DirectorySystem::clearRoot();
     //FAT::clearMemory();
     block_t buffer;
     //
-    File *f = new File("/Ime", FILE_EXT::DIR, 300);
-    File *f2 = new File("/Ime/Ime/ex", FILE_EXT::MB, 1);
+    File *f, *f1, *f2;
+    try {
+        f = new File("/Ime", FILE_EXT::DIR, 300);
+        f1 = new File("/Ime", FILE_EXT::MB, 1);
+        //f2 = new File("/", FILE_EXT::MB, 1);
+    } catch(short error) {
+        std::cerr << "Error: " << error;
+        return -1;
+    }
+
     //std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
-    delete f2;
+    delete f1;
+    // delete f2;
 
 
     HDisk::get().readBlock(buffer, FAT_BLK);
@@ -46,6 +56,7 @@ int main() {
     HDisk::get().readBlock(buffer, CONTROL_BLK);
 
     PrintHex::printBlock(buffer, BLOCK_SZ, 16);
+    return 1;
 }
 
 
