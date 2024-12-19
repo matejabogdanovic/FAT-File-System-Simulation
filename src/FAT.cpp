@@ -12,6 +12,7 @@ void FAT::init() {
     HDisk::get().readBlock(table, FAT_BLK);
     HDisk::get().readBlock(control, CONTROL_BLK);
     free_blocks_head = control[0];
+    free_blocks_tail = control[1];
 }
 
 void FAT::saveToDisk() {
@@ -19,6 +20,7 @@ void FAT::saveToDisk() {
     HDisk::get().writeBlock(table, FAT_BLK);
     std::cout << "\n=====CONTROL=>DISK[1]=====\n";
     control[0] = free_blocks_head;
+    control[1] = free_blocks_tail;
     HDisk::get().writeBlock(control, CONTROL_BLK);
 }
 
@@ -47,13 +49,30 @@ fat_entry_t FAT::take_blocks(block_cnt_t num) {
     return start;
 }
 
-void FAT::release_blocks(adisk_t start, block_cnt_t num) { // TODO: implement URGENT
+void FAT::release_blocks(adisk_t start, block_cnt_t num) {
+    if(num == 0)return;
+
+    if(free_blocks_head == 0) // no space
+        free_blocks_head = start;
+    else
+        table[free_blocks_tail] = start;
+
+    free_blocks_tail = start; // 1 iteration complete
+
+    while(table[free_blocks_tail])
+        free_blocks_tail = table[free_blocks_tail];
+    PrintHex::print(free_blocks_head, "\nFree Blocks Head (hex): ");
+    PrintHex::print(free_blocks_tail, "Free Blocks Tail (hex): ");
+    std::cout << std::endl;
+//    for(auto i = 0; i < num - 1; ++i) {
+//        free_blocks_tail = table[free_blocks_tail];
+//    }
 }
 
 void FAT::clearFAT() {
     uint8_t buf[BLOCK_SZ];
     control[0] = 3;
-
+    control[1] = 0xff;
     buf[FAT_BLK] = 0; // fat block
     buf[CONTROL_BLK] = 0; // for storing fat data on disk
     buf[ROOT_BLK] = 0; // root directory

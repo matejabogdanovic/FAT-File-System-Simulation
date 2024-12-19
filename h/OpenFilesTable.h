@@ -25,11 +25,11 @@ public:
 
     /**
      * @brief Occupies one free entry in the table.
-     * @param fcb_block
+     * @param data_block
      * @param offset_in_block
      * @return index of occupied entry
     */
-    int set(adisk_t fcb_block, char_t offset_in_block);
+    int set(adisk_t data_block, char_t offset_in_block);
 
     /**
      * @brief

@@ -53,10 +53,11 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
 
     if(!initialized)
         init();
-
+    // TODO URGENT: first check if file exists
 
     block_cnt_t data_size = (size + BLOCK_SZ - 1) / BLOCK_SZ;
-    fat_entry_t entry_index = FAT::take_blocks(data_size); // it's block where the data is stored
+    fat_entry_t entry_index = FAT::take_blocks(
+            data_size); // it's block where the data is stored
     if(!entry_index)return -5; // no space
 
 
@@ -69,19 +70,22 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
     Inode *prev;
     int link_with_parent = Inode::add(root, Inode::make_node(buf), &prev);
 
-    std::cout << " \n======Linking with parent or brother======\n" << link_with_parent;
+    std::cout << " \n======Linking with parent or brother======" << link_with_parent << std::endl;
     fat_entry_t fcb_block;
     switch(link_with_parent) {
         case 0: // needs linking
         case 1:
             // get fcb block
             fcb_block = FAT::take_blocks(1);
-            if(!fcb_block)return -5; // no space
+            if(!fcb_block) {
+                FAT::release_blocks(entry_index, data_size);
+                return -6;
+            }// no space
             linkAndWriteFCBs(link_with_parent, buf, fcb_block, prev);
             break;
         case 2: // already exists
             PrintHex::printBlock(FAT::table, BLOCK_SZ, 16);
-            std::cout << "\nALREADY EXISTS.";
+            std::cout << "\nALREADY EXISTS.\n";
             FAT::release_blocks(entry_index, data_size); // TODO
             PrintHex::printBlock(FAT::table, BLOCK_SZ, 16);
             entry_index = prev->fcb->entry;

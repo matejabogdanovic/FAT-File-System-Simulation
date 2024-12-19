@@ -25,23 +25,43 @@
 // u koju se upisuje ili odakle se cita, da ne mora da se zna adresa na disku gde je, vec samo preko inode
 #include <cstring>
 
+void reset() {
+    //FAT::clearMemory();
+    DirectorySystem::clearRoot();
+    FAT::clearFAT();
+}
+
+void printBlocks() {
+    block_t buffer;
+    HDisk::get().readBlock(buffer, FAT_BLK);
+
+    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
+    std::cout << std::endl;
+    HDisk::get().readBlock(buffer, CONTROL_BLK);
+
+    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
+    std::cout << std::endl;
+    HDisk::get().readBlock(buffer, ROOT_BLK);
+
+    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
+}
+
 //TODO: ne koristiti fcb_t vec samo FCB a kad treba upis na disk, tek onda raditi konverziju
 int main() {
-    //FAT::clearMemory();
-    //DirectorySystem::clearRoot();
+    //reset();
     std::cout << "File system init.\n";
-    //FAT::clearFAT();
 
 
-    block_t buffer;
+
     //
     File *f, *f1, *f2;
     try {
-        f = new File("/Ime", FILE_EXT::DIR, 300);
+        f = new File("/Ime", FILE_EXT::DIR, BLOCK_SZ * 252);
         //  f1 = new File("/Ime", FILE_EXT::MB, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
         std::cerr << "Error: " << error;
+        printBlocks();
         return -1;
     }
 
@@ -50,14 +70,8 @@ int main() {
     //  delete f1;
     // delete f2;
 
+    printBlocks();
 
-    HDisk::get().readBlock(buffer, FAT_BLK);
-
-    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
-    std::cout << std::endl;
-    HDisk::get().readBlock(buffer, CONTROL_BLK);
-
-    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
     return 1;
 }
 

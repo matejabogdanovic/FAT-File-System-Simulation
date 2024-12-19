@@ -25,12 +25,12 @@ void OpenFilesTable::printOFT(aoft_t limit) {
 }
 
 // TODO: Finish
-int OpenFilesTable::set(adisk_t fcb_block, block_cnt_t offset_in_block) {
+int OpenFilesTable::set(adisk_t data_block, block_cnt_t offset_in_block) {
     int ent = take_entry();
-    std::cout << "OFT entry taken: " << std::dec << ent;
+    std::cout << "\nOFT entry taken: " << std::dec << ent;
     if(ent < 0)return -1;
     aoft_t entry = ent;
-    table[entry][0] = ((dchar_t) fcb_block) << OFFS_SHIFT
+    table[entry][0] = ((dchar_t) data_block) << OFFS_SHIFT
                       | offset_in_block;
     table[entry][1] = 0; // cursor
 
