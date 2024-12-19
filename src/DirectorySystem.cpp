@@ -15,16 +15,33 @@ DirectorySystem::~DirectorySystem() { // TODO: Deallocate structures
 void DirectorySystem::init() { // TODO: Allocate the structure
     FAT::init();
 
-    FileControlBlock::fcb_t fcb = {0};
-    block_t block = {0};
+    // FileControlBlock::fcb_t fcb = {0};
+    //  block_t block = {0};
 
-    HDisk::get().readBlock(block, ROOT_BLK);
-    PrintHex::printBlock(block, BLOCK_SZ, 16);
+    //   HDisk::get().readBlock(block, ROOT_BLK);
+    ;// PrintHex::printBlock(block, BLOCK_SZ, 16);
 
-    memcpy(fcb, block, sizeof(fcb));
-    root = Inode::make_node(block);
+    //memcpy(fcb, block, sizeof(FileControlBlock::FCB));
+    std::cout << "\n======Loading Tree======\n";
+    root = DirectorySystem::loadTree(ROOT_BLK);
+    std::cout << "\n======Loading Tree FINISHED======\n";
 
     initialized = true;
+}
+
+Inode *DirectorySystem::loadTree(adisk_t block) {
+    block_t fcb = {0};
+    HDisk::get().readBlock(fcb, block);
+    FileControlBlock::printFCB(fcb);
+    Inode *node = Inode::make_node(fcb);
+
+    if(node->fcb->bro)
+        node->bro = loadTree(node->fcb->bro);
+
+    if(node->fcb->child)
+        node->child = loadTree(node->fcb->child);
+
+    return node;
 }
 
 // TODO:
@@ -34,12 +51,13 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
     if(path[0] != '/')return -3; // isn't full path
     if(path[strlen(path) - 1] == '/')return -4; // no name
 
-    if(!initialized)init();
+    if(!initialized)
+        init();
 
 
     block_cnt_t data_size = (size + BLOCK_SZ - 1) / BLOCK_SZ;
     fat_entry_t entry_index = FAT::take_blocks(data_size); // it's block where the data is stored
-    if(entry_index == 0)return -5;
+    if(!entry_index)return -5; // no space
 
 
     FileControlBlock::fcb_t buf;
@@ -50,33 +68,18 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
 
     Inode *prev;
     int link_with_parent = Inode::add(root, Inode::make_node(buf), &prev);
-    std::cout << " \n---\n" << link_with_parent;
 
+    std::cout << " \n======Linking with parent or brother======\n" << link_with_parent;
     fat_entry_t fcb_block;
-    block_t blk = {0};
     switch(link_with_parent) {
-        case 0:
+        case 0: // needs linking
         case 1:
-            std::cout << "\n======Linking with parent or brother======" << link_with_parent << std::endl;
+            // get fcb block
             fcb_block = FAT::take_blocks(1);
-            // write fcb to disk TODO allocate 1/8th not whole block
-            HDisk::get().writeBlock(buf, fcb_block);
-            if(link_with_parent == false) {
-                prev->fcb->bro = fcb_block;
-            } else {
-                prev->fcb->child = fcb_block;
-            }
-            // change parents or brothers fcb TODO change only 1/8th not whole block
-            FileControlBlock::populateFCB(blk, prev->fcb->path, prev->fcb->ext, prev->fcb->data_size,
-                                          prev->fcb->entry, prev->fcb->child, prev->fcb->bro,
-                                          prev->fcb->child_offs, prev->fcb->bro_offs);
-
-            HDisk::get().writeBlock(blk, prev->fcb->entry);
-
-            HDisk::get().readBlock(blk, prev->fcb->entry);
-            PrintHex::printBlock(blk, BLOCK_SZ, 16);
+            if(!fcb_block)return -5; // no space
+            linkAndWriteFCBs(link_with_parent, buf, fcb_block, prev);
             break;
-        case 2:
+        case 2: // already exists
             PrintHex::printBlock(FAT::table, BLOCK_SZ, 16);
             std::cout << "\nALREADY EXISTS.";
             FAT::release_blocks(entry_index, data_size); // TODO
@@ -91,6 +94,30 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
     // usually we would need FCB address to write in OFT but since it's write back, we will directly write in data block
     return oft.set(entry_index,
                    0); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
+}
+
+void DirectorySystem::linkAndWriteFCBs(bool parent, FileControlBlock::fcb_t buf, fat_entry_t fcb_block, Inode *prev) {
+
+    block_t blk = {0};
+
+    // write fcb to disk TODO allocate 1/8th not whole block
+    HDisk::get().writeBlock(buf, fcb_block);
+    // linking
+    if(!parent) {
+        prev->fcb->bro = fcb_block;
+    } else {
+        prev->fcb->child = fcb_block;
+    }
+    // change parents or brothers fcb TODO change only 1/8th not whole block
+//    FileControlBlock::populateFCB(blk, prev->fcb->path, prev->fcb->ext, prev->fcb->data_size,
+//                                  prev->fcb->entry, prev->fcb->child, prev->fcb->bro,
+//                                  prev->fcb->child_offs, prev->fcb->bro_offs);
+
+    FileControlBlock::populateFCB(blk, prev->fcb);
+    HDisk::get().writeBlock(blk, prev->fcb->entry);
+
+    HDisk::get().readBlock(blk, prev->fcb->entry);
+    PrintHex::printBlock(blk, BLOCK_SZ, 16);
 }
 
 int DirectorySystem::close(FHANDLE file) {
@@ -114,13 +141,16 @@ void DirectorySystem::clearRoot() { // TODO: not tested
     block_t block = {0};
     FileControlBlock::fcb_t fcb;
     FileControlBlock::populateFCB(fcb, "/", DIR, 69, ROOT_BLK, 0, 0, 0, 0);
-    memcpy(block, fcb, sizeof(fcb));
+    memcpy(block, fcb, sizeof(FileControlBlock::FCB));
     HDisk::get().writeBlock(block, ROOT_BLK);
 }
 
 // level order traversal
 void DirectorySystem::printTree() {
 }
+
+
+
 
 
 

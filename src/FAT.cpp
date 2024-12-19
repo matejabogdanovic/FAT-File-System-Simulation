@@ -25,6 +25,7 @@ void FAT::saveToDisk() {
 // returns index in FAT of the first free block
 // invalid returns 0
 fat_entry_t FAT::take_blocks(block_cnt_t num) {
+    if(num == 0)return 0;
     if(free_blocks_head == 0)return 0;
     //if (!initilized)init();
 
@@ -66,10 +67,8 @@ void FAT::clearFAT() {
 }
 
 void FAT::clearMemory() {
-    block_t buf;
-    for(uint16_t i = 0; i < BLOCK_SZ; i++) {
-        buf[i] = (uint8_t) 0;
-    }
+    block_t buf = {0};
+
     for(uint16_t i = 0; i < BLOCK_SZ; i++) {
         HDisk::get().writeBlock(buf, i);
     }

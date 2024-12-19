@@ -44,16 +44,19 @@ private:
      * @param extension
      * @param data_size
      * @param entry_index
+     * @return <0 if error
     */
-    static void populateFCB(fcb_t buf,
-                            pathname_t path,
-                            FILE_EXT extension,
-                            block_cnt_t data_size,
-                            fat_entry_t entry_index,
-                            adisk_t child = 0,
-                            adisk_t bro = 0,
-                            char_t child_offs = 0,
-                            char_t bro_offs = 0);
+    static int populateFCB(fcb_t buf,
+                           pathname_t path,
+                           FILE_EXT extension,
+                           block_cnt_t data_size,
+                           fat_entry_t entry_index,
+                           adisk_t child = 0,
+                           adisk_t bro = 0,
+                           char_t child_offs = 0,
+                           char_t bro_offs = 0);
+
+    static int populateFCB(fcb_t buf, FileControlBlock::FCB *fcb);
 
     /**
      * @brief Prints \p fcb using a predefined format.

@@ -4,7 +4,7 @@
 void OpenFilesTable::printFHANDLE(FHANDLE file) {
     std::cout << "\n====================";
     std::cout << std::dec << "\nFor FHANDLE: " << file << std::endl;
-    PrintHex::print((adisk_t) (table[file][0] >> OFFS_SHIFT), "FCB block: ");
+    PrintHex::print((adisk_t)(table[file][0] >> OFFS_SHIFT), "DATA block: ");
     std::cout << std::endl;
     PrintHex::print(table[file][0] & OFFS_MASK, "Offset in block: ");
     std::cout << "\n====================\n";
@@ -15,7 +15,7 @@ void OpenFilesTable::printOFT(aoft_t limit) {
     for(dchar_t i = 0; i <= limit; i++) {
         if(i > 0 && i % 8 == 0)
             std::cout << std::endl;
-        PrintHex::print((adisk_t) (table[i][0] >> OFFS_SHIFT));
+        PrintHex::print((adisk_t)(table[i][0] >> OFFS_SHIFT));
         PrintHex::print(table[i][0] & OFFS_MASK);
         PrintHex::print(table[i][1]);
     }
@@ -65,7 +65,7 @@ void OpenFilesTable::release_entry(FHANDLE fhandle) {
     auto i = fhandle / 64;
     auto j = fhandle % 64;
 
-    free_vector[i] &= ~(uint64_t) (1 << j);
+    free_vector[i] &= ~(uint64_t)(1 << j);
 }
 
 

@@ -25,18 +25,20 @@
 // u koju se upisuje ili odakle se cita, da ne mora da se zna adresa na disku gde je, vec samo preko inode
 #include <cstring>
 
+//TODO: ne koristiti fcb_t vec samo FCB a kad treba upis na disk, tek onda raditi konverziju
 int main() {
-
-    std::cout << "File system init.\n";
-    FAT::clearFAT();
-    //DirectorySystem::clearRoot();
     //FAT::clearMemory();
+    //DirectorySystem::clearRoot();
+    std::cout << "File system init.\n";
+    //FAT::clearFAT();
+
+
     block_t buffer;
     //
     File *f, *f1, *f2;
     try {
         f = new File("/Ime", FILE_EXT::DIR, 300);
-        f1 = new File("/Ime", FILE_EXT::MB, 1);
+        //  f1 = new File("/Ime", FILE_EXT::MB, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
         std::cerr << "Error: " << error;
@@ -45,7 +47,7 @@ int main() {
 
     //std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
-    delete f1;
+    //  delete f1;
     // delete f2;
 
 
