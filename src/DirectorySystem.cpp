@@ -58,7 +58,7 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
     block_cnt_t data_size = (size + BLOCK_SZ - 1) / BLOCK_SZ;
     fat_entry_t entry_index = FAT::take_blocks(
             data_size); // it's block where the data is stored
-    if(!entry_index)return -5; // no space
+    //if(!entry_index)return -5; // don't return here, try to find node to link with and then if the file doesn't exist (can be linked) return
 
 
     FileControlBlock::fcb_t buf;
@@ -67,8 +67,15 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
     FileControlBlock::printFCB(buf);
     std::cout << "\nLINKING\n";
 
-    Inode *prev;
-    int link_with_parent = Inode::add(root, Inode::make_node(buf), &prev);
+    Inode *prev, *node = Inode::make_node(buf);
+    int link_with_parent = Inode::findToLink(root, node, &prev);
+
+    if(!entry_index && link_with_parent != 2) // no space and node doesn't exist (needs to be allocated but no space)
+        return -5;// no space
+
+    if(Inode::link(link_with_parent, node, prev) < 0)
+        return -6;
+
 
     std::cout << " \n======Linking with parent or brother======" << link_with_parent << std::endl;
     fat_entry_t fcb_block;
