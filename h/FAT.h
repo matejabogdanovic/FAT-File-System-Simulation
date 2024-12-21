@@ -36,13 +36,13 @@ private:
      * @param num number of blocks to allocate
      * @return 0 if no space
     */
-    static fat_entry_t take_blocks(block_cnt_t num);
+    static fat_entry_t takeBlocks(block_cnt_t num);
 
     /**
      * @brief Frees \p num of blocks.
      * @param start first block
      * @param num number of blocks to release from \p start
      */
-    static void release_blocks(adisk_t start, block_cnt_t num);
+    static void releaseBlocks(adisk_t start, block_cnt_t num);
 };
 

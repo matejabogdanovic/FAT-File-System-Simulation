@@ -14,7 +14,7 @@ struct Inode {
     * @param fcb
     * @return Allocated node.
     */
-    static Inode *make_node(FileControlBlock::fcb_t fcb);
+    static Inode *makeNode(FileControlBlock::fcb_t fcb);
 
     /**
      * @brief Finds parent/brother to link \p node into tree, starting search from \p root.

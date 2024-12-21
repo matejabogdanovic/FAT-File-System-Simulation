@@ -35,13 +35,13 @@ public:
      * @brief
      * @return negative if no free entries
      */
-    int take_entry();
+    int takeEntry();
 
     /**
      * @brief Frees \p fhandle entry.
      * @param fhandle
      */
-    void release_entry(FHANDLE fhandle);
+    void releaseEntry(FHANDLE fhandle);
 
 private:
     oft_t table{ };

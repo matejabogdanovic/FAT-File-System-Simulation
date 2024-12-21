@@ -9,10 +9,11 @@ public:
         char path[PATH_NAME_SZ] = {0};
         FILE_EXT ext;
         block_cnt_t data_size;
-        fat_entry_t entry;
+        fat_entry_t data_block;
+        adisk_t fcb_block;
         adisk_t child, bro;
         char_t child_offs, bro_offs;
-        char_t padding[9] = {0};
+        char_t padding[8] = {0};
         // char_t padding[11] = {0};
 
 
@@ -51,6 +52,7 @@ private:
                            FILE_EXT extension,
                            block_cnt_t data_size,
                            fat_entry_t entry_index,
+                           adisk_t fcb_block = 0,
                            adisk_t child = 0,
                            adisk_t bro = 0,
                            char_t child_offs = 0,

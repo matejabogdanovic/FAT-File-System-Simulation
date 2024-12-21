@@ -22,7 +22,7 @@ Inode::~Inode() {
     delete fcb;
 }
 
-Inode *Inode::make_node(FileControlBlock::fcb_t fcb) {
+Inode *Inode::makeNode(FileControlBlock::fcb_t fcb) {
 
     auto *f = (FileControlBlock::FCB *) fcb;
     auto *node = new Inode(
@@ -37,7 +37,7 @@ Inode *Inode::make_node(FileControlBlock::fcb_t fcb) {
 // TODO: split by / and make sure that it's in order
 int Inode::findToLink(Inode *root, Inode *node, Inode **link_to) {
     if(!node || !root || !link_to)return -10;
-    if(!node->fcb)return -20;
+    if(!node->fcb || !root->fcb)return -20;
 
 
     char needed_node[PATH_NAME_SZ] = {0};

@@ -48,9 +48,8 @@ void printBlocks() {
 
 //TODO: ne koristiti fcb_t vec samo FCB a kad treba upis na disk, tek onda raditi konverziju
 int main() {
-    reset();
+    //reset();
     std::cout << "File system init.\n";
-
 
 
     //

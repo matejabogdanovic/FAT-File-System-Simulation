@@ -20,6 +20,7 @@ int FileControlBlock::populateFCB(fcb_t buf,
                                   FILE_EXT extension,
                                   block_cnt_t data_size,
                                   fat_entry_t entry_index,
+                                  adisk_t fcb_block,
                                   adisk_t child,
                                   adisk_t bro,
                                   char_t child_offs,
@@ -37,8 +38,11 @@ int FileControlBlock::populateFCB(fcb_t buf,
     for(size_t j = 0; j < sizeof(FCB::data_size); j++, i++) {
         buf[i] = data_size;
     }
-    for(size_t j = 0; j < sizeof(FCB::entry); j++, i++) {
+    for(size_t j = 0; j < sizeof(FCB::data_block); j++, i++) {
         buf[i] = entry_index;
+    }
+    for(size_t j = 0; j < sizeof(FCB::fcb_block); j++, i++) {
+        buf[i] = fcb_block;
     }
     for(size_t j = 0; j < sizeof(FCB::child); j++, i++) {
         buf[i] = child;

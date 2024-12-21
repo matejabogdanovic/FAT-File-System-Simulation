@@ -26,7 +26,7 @@ void FAT::saveToDisk() {
 
 // returns index in FAT of the first free block
 // invalid returns 0
-fat_entry_t FAT::take_blocks(block_cnt_t num) {
+fat_entry_t FAT::takeBlocks(block_cnt_t num) {
     if(num == 0)return 0;
     if(free_blocks_head == 0)return 0;
     //if (!initilized)init();
@@ -49,7 +49,7 @@ fat_entry_t FAT::take_blocks(block_cnt_t num) {
     return start;
 }
 
-void FAT::release_blocks(adisk_t start, block_cnt_t num) {
+void FAT::releaseBlocks(adisk_t start, block_cnt_t num) {
     if(num == 0)return;
 
     if(free_blocks_head == 0) // no space
