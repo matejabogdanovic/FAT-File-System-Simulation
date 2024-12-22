@@ -20,14 +20,10 @@
 // posto FCB zauzima 1/8 bloka onda nam treba 256/8 = 32 blokova. Da bi vodili racuna o slobodnim osminama
 // treba nam 8 bita odnosno jedan char_t. za 256 fajlova treba nam 256 char_t sto je jedan ceo blok.
 
-// TODO: Change filename_t
-// TODO: OFT offset ne treba? treba valjda da ima pokazivac na inode u kome je fcb, preko fcb se dodje do adrese na disku
-// u koju se upisuje ili odakle se cita, da ne mora da se zna adresa na disku gde je, vec samo preko inode
-#include <cstring>
 
 void reset() {
     //FAT::clearMemory();
-    DirectorySystem::clearRoot();
+    DirectorySystem::get().clearRoot();
     FAT::clearFAT();
 }
 
@@ -58,8 +54,8 @@ int main() {
         f = new File("/Ime", FILE_EXT::DIR, 1);
         f1 = new File("/Ime", FILE_EXT::MB, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
-    } catch(short error) {
-        std::cerr << "Error: " << error;
+    } catch(int error) {
+        std::cerr << "Error: " << std::dec << error;
         printBlocks();
         return -1;
     }

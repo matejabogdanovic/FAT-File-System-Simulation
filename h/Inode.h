@@ -18,10 +18,6 @@ struct Inode {
 
     /**
      * @brief Finds parent/brother to link \p node into tree, starting search from \p root.
-     * @param root
-     * @param node
-     * @param link_to node that it's linked with
-     * @param parent \p link_to is parent?
      * @return <0 if error
      */
     static int findToLink(Inode *root, Inode *node, Inode **link_to);

@@ -24,7 +24,6 @@ void OpenFilesTable::printOFT(aoft_t limit) {
     std::cout << "\n=======================================================\n";
 }
 
-// TODO: Finish
 int OpenFilesTable::set(adisk_t data_block, block_cnt_t offset_in_block) {
     int ent = takeEntry();
     std::cout << "\nOFT entry taken: " << std::dec << ent;

@@ -29,7 +29,6 @@ void FAT::saveToDisk() {
 fat_entry_t FAT::takeBlocks(block_cnt_t num) {
     if(num == 0)return 0;
     if(free_blocks_head == 0)return 0;
-    //if (!initilized)init();
 
 
     fat_entry_t start = free_blocks_head, last = free_blocks_head;
@@ -64,9 +63,6 @@ void FAT::releaseBlocks(adisk_t start, block_cnt_t num) {
     PrintHex::print(free_blocks_head, "\nFree Blocks Head (hex): ");
     PrintHex::print(free_blocks_tail, "Free Blocks Tail (hex): ");
     std::cout << std::endl;
-//    for(auto i = 0; i < num - 1; ++i) {
-//        free_blocks_tail = table[free_blocks_tail];
-//    }
 }
 
 void FAT::clearFAT() {
@@ -85,7 +81,7 @@ void FAT::clearFAT() {
     HDisk::get().writeBlock(control, CONTROL_BLK);
 }
 
-void FAT::clearMemory() {
+void FAT::clearMemory() { // TODO: change place
     block_t buf = {0};
 
     for(uint16_t i = 0; i < BLOCK_SZ; i++) {

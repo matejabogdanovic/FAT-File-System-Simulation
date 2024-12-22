@@ -3,13 +3,13 @@
 
 
 File::File(pathname_t path, FILE_EXT extension, size_t size) {
-    handle = DirectorySystem::open(path, extension, size);
+    handle = DirectorySystem::get().open(path, extension, size);
     if(handle < 0)throw handle;
 }
 
 int File::close() {
     if(closed)return 1;
-    DirectorySystem::close(handle);
+    DirectorySystem::get().close(handle);
     closed = true;
 
     return 0;

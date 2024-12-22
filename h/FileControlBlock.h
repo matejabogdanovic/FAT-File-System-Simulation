@@ -17,41 +17,35 @@ public:
         // char_t padding[11] = {0};
 
 
-//        explicit FCB(filename_t name,
-//                     FILE_EXT ext,
-//                     block_cnt_t data_size,
-//                     fat_entry_t entry,
-//                     adisk_t left,
-//                     adisk_t right) : ext(ext), data_size(data_size), entry(entry), left(left), right(right) {
-//            bool name_finished = false;
-//            for(size_t i = 0; i < sizeof(FCB::name); i++) {
-//
-//                if(name[i] == '\0')name_finished = true;
-//                this->name[i] = (name_finished ? (char) 0 : name[i]);
-//            }
-//        }
+        explicit FCB(pathname_t path,
+                     FILE_EXT extension,
+                     block_cnt_t data_size,
+                     fat_entry_t data_block,
+                     adisk_t fcb_block,
+                     adisk_t child,
+                     adisk_t bro,
+                     char_t child_offs,
+                     char_t bro_offs);
     };
+
     typedef char_t fcb_t[sizeof(FCB)];
 
 private:
+
     friend class FAT;
 
     friend class DirectorySystem;
 
     /**
      * @brief Populates \p buf with given parameters.
-     * @param buf
-     * @param path
-     * @param extension
-     * @param data_size
-     * @param entry_index
+     * @param buf should be initialized with 0
      * @return <0 if error
     */
     static int populateFCB(fcb_t buf,
                            pathname_t path,
                            FILE_EXT extension,
                            block_cnt_t data_size,
-                           fat_entry_t entry_index,
+                           fat_entry_t data_block,
                            adisk_t fcb_block = 0,
                            adisk_t child = 0,
                            adisk_t bro = 0,

@@ -3,12 +3,11 @@
 #include "../h/HDisk.h"
 #include <cstring>
 
-Inode *DirectorySystem::root = nullptr;
-bool DirectorySystem::initialized = false;
-OpenFilesTable DirectorySystem::oft;
+Inode *root = nullptr;
+bool initialized = false;
+OpenFilesTable oft;
 
 DirectorySystem::~DirectorySystem() { // TODO: Deallocate structures
-
     delete root;
 }
 
@@ -40,7 +39,6 @@ Inode *DirectorySystem::loadTree(adisk_t block) {
     return node;
 }
 
-// TODO:
 FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) {
     if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -1;
     if(!strcmp(path, "/"))return -2; // can't do root
@@ -51,12 +49,11 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
     if(!initialized)
         if(DirectorySystem::init() < 0) return -5;
 
-    // TODO URGENT: first check if file exists
 
     block_cnt_t data_size = (size + BLOCK_SZ - 1) / BLOCK_SZ;
     fat_entry_t data_block = 0; // it's block where the data is stored
     fat_entry_t fcb_block = 0;
-    FileControlBlock::fcb_t buf; // make buffer without allocating data + fcb blocks
+    FileControlBlock::fcb_t buf = {0}; // make buffer without allocating data + fcb blocks
 
     FileControlBlock::populateFCB(buf, path, extension, data_size, data_block, fcb_block);
     std::cout << "\nOPENING FILE\n";
@@ -122,9 +119,6 @@ void DirectorySystem::linkAndWriteFCBs(bool parent, FileControlBlock::fcb_t buf,
         prev->fcb->child = fcb_block;
     }
     // change parents or brothers fcb TODO change only 1/8th not whole block
-//    FileControlBlock::populateFCB(blk, prev->fcb->path, prev->fcb->ext, prev->fcb->data_size,
-//                                  prev->fcb->entry, prev->fcb->child, prev->fcb->bro,
-//                                  prev->fcb->child_offs, prev->fcb->bro_offs);
 
     FileControlBlock::populateFCB(blk, prev->fcb); // update previous fcb
     HDisk::get().writeBlock(blk, prev->fcb->fcb_block); // write update to disk
@@ -152,7 +146,7 @@ int DirectorySystem::close(FHANDLE file) {
 
 void DirectorySystem::clearRoot() { // TODO: not tested
     block_t block = {0};
-    FileControlBlock::fcb_t fcb;
+    FileControlBlock::fcb_t fcb = {0};
     FileControlBlock::populateFCB(fcb, "/", DIR, 69, 0xff, ROOT_BLK, 0, 0, 0);
     memcpy(block, fcb, sizeof(FileControlBlock::FCB));
     HDisk::get().writeBlock(block, ROOT_BLK);
@@ -160,6 +154,11 @@ void DirectorySystem::clearRoot() { // TODO: not tested
 
 // level order traversal
 void DirectorySystem::printTree() {
+}
+
+DirectorySystem &DirectorySystem::get() {
+    static DirectorySystem dir;
+    return dir;
 }
 
 

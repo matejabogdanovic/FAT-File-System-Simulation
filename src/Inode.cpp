@@ -34,7 +34,6 @@ Inode *Inode::makeNode(FileControlBlock::fcb_t fcb) {
     return node;
 }
 
-// TODO: split by / and make sure that it's in order
 int Inode::findToLink(Inode *root, Inode *node, Inode **link_to) {
     if(!node || !root || !link_to)return -10;
     if(!node->fcb || !root->fcb)return -20;
@@ -82,65 +81,6 @@ int Inode::findToLink(Inode *root, Inode *node, Inode **link_to) {
     // return values
     *link_to = prev;
     return link_with_parent;
-//
-//    Inode *head = root, *prev = root;
-//    char *next_folder = nullptr;
-//    bool link_with_parent = true, path_finished = false;
-//    for(int i = 0; head; ++i) {
-//        prev = head;
-//        if(!strcmp(head->fcb->path, token)) { // found
-//            if(!strcmp(head->fcb->path, node->fcb->path)) {
-//                if(head->fcb->ext == node->fcb->ext) {
-//                    *link_to = head;
-//                    return 2; // FILE ALREADY EXISTS
-//                } else { // extensions not the same but path is
-//
-//                }
-//            }
-//
-//            if(head->fcb->ext != DIR) {
-//                link_with_parent = false;
-//                head = head->bro; // check next file in current directory
-//                continue;
-//            }
-//
-//
-//            if(i == 0) {
-//                // if it's root folder, start with string tokenization
-//                next_folder = strtok(pathstr, "/");
-//            } else {
-//                next_folder = strtok(NULL, "/");
-//                if(!next_folder) {
-//                    // the whole path is found which means, this hit happened because path names are the same
-//                    // but extensions aren't
-//                    // TODO problem, can't break here, what if the file exists somewhere forward
-//                    // we need to get to the last file and link with it
-//                    link_with_parent = false;
-//                    continue;
-//                }
-//
-//                strcat(token, "/");
-//            }
-//
-//            strcat(token, next_folder);
-//
-//            link_with_parent = true;
-//            head = head->child; // go deeper
-//        } else {
-//            link_with_parent = false;
-//            head = head->bro; // check next file in current directory
-//        }
-//    }
-//    if(strtok(NULL, "/"))return -40; // INVALID PATH NAME, didn't find wanted path
-////    if(link_with_parent) { DON't link here, just return information if linking is possible
-////        prev->child = node;
-////    } else {
-////        prev->bro = node;
-////    }
-//
-//    // return values
-//    *link_to = prev;
-//    return link_with_parent;
 }
 
 int Inode::link(bool link_with_parent, Inode *node, Inode *prev) {
