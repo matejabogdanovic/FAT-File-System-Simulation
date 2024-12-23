@@ -19,11 +19,12 @@ typedef fat_entry_t fat_t[FAT_SZ];
 //FILE
 static const uint8_t PATH_NAME_SZ = 16;
 typedef char filename_t[PATH_NAME_SZ];
-typedef const char pathname_t[PATH_NAME_SZ];
+typedef const char pathname_t[PATH_NAME_SZ - 1];
 enum FILE_EXT : uint8_t {
-    MB = 0xfe,
-    DIR = 0x01
+    MB = 0x01,
+    DIR = 0x00
 };
+static const char *file_ext_str[2] = {"dir", "mb"};
 typedef int16_t FHANDLE;
 
 

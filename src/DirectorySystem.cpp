@@ -3,9 +3,6 @@
 #include "../h/HDisk.h"
 #include <cstring>
 
-Inode *root = nullptr;
-bool initialized = false;
-OpenFilesTable oft;
 
 DirectorySystem::~DirectorySystem() { // TODO: Deallocate structures
     delete root;
@@ -19,6 +16,8 @@ int DirectorySystem::init() {
     if(!root)return -1;
     std::cout << "\n======Loading Tree FINISHED======\n";
 
+    //root->printInode();
+
     initialized = true;
     return 0;
 }
@@ -26,7 +25,7 @@ int DirectorySystem::init() {
 Inode *DirectorySystem::loadTree(adisk_t block) {
     block_t fcb = {0};
     HDisk::get().readBlock(fcb, block);
-    FileControlBlock::printFCB(fcb);
+    FileControlBlock::printFCBt(fcb);
     Inode *node = Inode::makeNode(fcb);
     if(!node)return nullptr;
 
@@ -40,15 +39,13 @@ Inode *DirectorySystem::loadTree(adisk_t block) {
 }
 
 FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) {
-    if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -1;
-    if(!strcmp(path, "/"))return -2; // can't do root
-    if(path[0] != '/')return -3; // isn't full path
-    if(path[strlen(path) - 1] == '/')return -4; // no name
-
-
-    if(!initialized)
-        if(DirectorySystem::init() < 0) return -5;
-
+    if(!initialized)return -1;
+    if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -2;
+    if(!strcmp(path, "/"))return -3; // can't do root
+    if(path[0] != '/')return -4; // isn't full path
+    
+    auto path_len = strlen(path);
+    if(path_len > PATH_NAME_SZ - 1 || path[path_len - 1] == '/')return -5; // no name
 
     block_cnt_t data_size = (size + BLOCK_SZ - 1) / BLOCK_SZ;
     fat_entry_t data_block = 0; // it's block where the data is stored
@@ -57,7 +54,7 @@ FHANDLE DirectorySystem::open(pathname_t path, FILE_EXT extension, size_t size) 
 
     FileControlBlock::populateFCB(buf, path, extension, data_size, data_block, fcb_block);
     std::cout << "\nOPENING FILE\n";
-    FileControlBlock::printFCB(buf);
+    FileControlBlock::printFCBt(buf);
     std::cout << "\nLINKING\n";
 
     Inode *prev, *node = Inode::makeNode(buf);
@@ -137,14 +134,10 @@ int DirectorySystem::close(FHANDLE file) {
 
     oft.printFHANDLE(file);
 
-//    std::cout << "\n=====CLOSED=====\n FHANDLE: " << file << "\n FAT: \n";
-//
-//    PrintHex::printBlock(table, 256, 16);
-//    std::cout << "\n================\n";
     return 0;
 }
 
-void DirectorySystem::clearRoot() { // TODO: not tested
+void DirectorySystem::clearRoot() {
     block_t block = {0};
     FileControlBlock::fcb_t fcb = {0};
     FileControlBlock::populateFCB(fcb, "/", DIR, 69, 0xff, ROOT_BLK, 0, 0, 0);
@@ -152,13 +145,20 @@ void DirectorySystem::clearRoot() { // TODO: not tested
     HDisk::get().writeBlock(block, ROOT_BLK);
 }
 
-// level order traversal
-void DirectorySystem::printTree() {
+//
+int DirectorySystem::printTree() {
+    if(!DirectorySystem::get().initialized)return -1;
+    Inode::printTree(DirectorySystem::get().root);
+    return 0;
 }
 
 DirectorySystem &DirectorySystem::get() {
     static DirectorySystem dir;
     return dir;
+}
+
+DirectorySystem::DirectorySystem() {
+    init();
 }
 
 

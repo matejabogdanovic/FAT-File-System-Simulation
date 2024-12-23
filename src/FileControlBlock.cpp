@@ -2,21 +2,21 @@
 #include "../h/PrintHex.h"
 #include <cstring>
 
-void FileControlBlock::printFCB(fcb_t buf) {
+void FileControlBlock::printFCBt(fcb_t fcb) {
 
     std::cout << "\n====================";
     std::cout << "\nFile name: ";
     for(size_t i = 0; i < sizeof(FCB::path); i++) {
-        if(buf[i] != '\0')std::cout << buf[i];
+        if(fcb[i] != '\0')std::cout << fcb[i];
     }
 
     std::cout << "\nFCB block:\n";
-    PrintHex::printBlock(buf, sizeof(fcb_t), 8);
+    PrintHex::printBlock(fcb, sizeof(fcb_t), 8);
     std::cout << "\n====================\n";
 }
 
 int FileControlBlock::populateFCB(fcb_t buf,
-                                  pathname_t path,
+                                  const char path[PATH_NAME_SZ],
                                   FILE_EXT extension,
                                   block_cnt_t data_size,
                                   fat_entry_t data_block,
@@ -44,7 +44,8 @@ int FileControlBlock::populateFCB(fcb_t buf, FileControlBlock::FCB *fcb) {
     return 0;
 }
 
-FileControlBlock::FCB::FCB(pathname_t path, FILE_EXT extension, block_cnt_t data_size, fat_entry_t data_block,
+FileControlBlock::FCB::FCB(const char path[PATH_NAME_SZ], FILE_EXT extension, block_cnt_t data_size,
+                           fat_entry_t data_block,
                            adisk_t fcb_block, adisk_t child, adisk_t bro, char_t child_offs, char_t bro_offs)
         : ext(extension), data_size(data_size),
           data_block(data_block), fcb_block(fcb_block), child(child),
@@ -52,4 +53,19 @@ FileControlBlock::FCB::FCB(pathname_t path, FILE_EXT extension, block_cnt_t data
 
 
     strcpy(this->path, path);
+}
+
+void FileControlBlock::FCB::printFCB() {
+    std::cout
+            << "rwx "
+            << this->path << "." << file_ext_str[ext] << " "
+            << std::dec << data_size * BLOCK_SZ << "B";
+
+//    PrintHex::print(data_size, "data_size:");
+//    PrintHex::print(data_block, "data_block:");
+//    PrintHex::print(fcb_block, "fcb_block:");
+//    PrintHex::print(child, "child:");
+//    PrintHex::print(bro, "bro:");
+//    PrintHex::print(child_offs, "child_offs:");
+//    PrintHex::print(bro_offs, "bro_offs:");
 }

@@ -17,7 +17,7 @@ public:
         // char_t padding[11] = {0};
 
 
-        explicit FCB(pathname_t path,
+        explicit FCB(const char path[PATH_NAME_SZ],
                      FILE_EXT extension,
                      block_cnt_t data_size,
                      fat_entry_t data_block,
@@ -26,9 +26,18 @@ public:
                      adisk_t bro,
                      char_t child_offs,
                      char_t bro_offs);
+
+        void printFCB();
     };
 
     typedef char_t fcb_t[sizeof(FCB)];
+
+    /**
+     * @brief Prints \p fcb using a predefined format.
+     * @param fcb
+    */
+    static void printFCBt(fcb_t fcb);
+
 
 private:
 
@@ -42,7 +51,7 @@ private:
      * @return <0 if error
     */
     static int populateFCB(fcb_t buf,
-                           pathname_t path,
+                           const char path[PATH_NAME_SZ],
                            FILE_EXT extension,
                            block_cnt_t data_size,
                            fat_entry_t data_block,
@@ -53,10 +62,4 @@ private:
                            char_t bro_offs = 0);
 
     static int populateFCB(fcb_t buf, FileControlBlock::FCB *fcb);
-
-    /**
-     * @brief Prints \p fcb using a predefined format.
-     * @param fcb
-    */
-    static void printFCB(fcb_t fcb);
 };

@@ -23,7 +23,7 @@
 
 void reset() {
     //FAT::clearMemory();
-    DirectorySystem::get().clearRoot();
+    DirectorySystem::clearRoot();
     FAT::clearFAT();
 }
 
@@ -47,14 +47,13 @@ int main() {
     //reset();
     std::cout << "File system init.\n";
 
-
     //
     File *f, *f1, *f2;
     try {
-        f = new File("/Ime", FILE_EXT::DIR, 1);
-        f1 = new File("/Ime", FILE_EXT::MB, 1);
+        f = new File("/Ime/I2/I3/I4/f", FILE_EXT::MB, 1);
+        // f1 = new File("/Ime/I", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
-    } catch(int error) {
+    } catch(short error) {
         std::cerr << "Error: " << std::dec << error;
         printBlocks();
         return -1;
@@ -62,7 +61,8 @@ int main() {
 
     //std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
-    delete f1;
+    //delete f1;
+    DirectorySystem::printTree();
     // delete f2;
 
     printBlocks();

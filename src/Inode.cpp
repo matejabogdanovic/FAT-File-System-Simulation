@@ -92,3 +92,40 @@ int Inode::link(bool link_with_parent, Inode *node, Inode *prev) {
     }
     return 0;
 }
+
+void Inode::printInode() {
+    this->fcb->printFCB();
+}
+
+int Inode::printTree(Inode *node, unsigned parent_name_size, int level) {
+    if(!node)return -1;
+
+    if(level > 0) {
+
+        for(int i = 0; i < 4 * (level - 1); ++i) {
+            std::cout << " ";
+        }
+
+
+        std::cout << "|___";
+    }
+
+
+    std::cout << (node->fcb->path + parent_name_size);
+    if(node->fcb->ext != DIR) std::cout << "." << file_ext_str[node->fcb->ext];
+
+    std::cout << "\n";
+
+
+    if(node->child) {
+        auto len = strlen(node->fcb->path);
+        printTree(node->child,
+                  (parent_name_size ? len + 1 : len),
+                  level + 1);
+    }
+    if(node->bro) {
+        printTree(node->bro, parent_name_size, level);
+    }
+
+    return 0;
+}

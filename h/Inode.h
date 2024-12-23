@@ -24,6 +24,10 @@ struct Inode {
 
     static int link(bool link_with_parent, Inode *node, Inode *prev);
 
+    void printInode();
+
+    static int printTree(Inode *node, unsigned parent_name_size = 0, int level = 0);
+
     ~Inode();
 };
 

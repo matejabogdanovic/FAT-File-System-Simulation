@@ -7,12 +7,13 @@ public:
     /**
      * @brief Resets root block to contain only root folder. Clears \b just the root block.
      */
-    void clearRoot();
+    static void clearRoot();
 
     /**
      * @brief Prints file system tree starting from root directory.
+     * @return <0 if error
      */
-    void printTree();
+    static int printTree();
 
     static DirectorySystem &get();
 
@@ -20,6 +21,8 @@ public:
 
 private:
     friend class File;
+
+    DirectorySystem();
 
     /**
      * @brief
@@ -43,16 +46,16 @@ private:
      */
     int init();
 
-    Inode *loadTree(adisk_t blk); // should be done with block + offset
+    static Inode *loadTree(adisk_t blk); // should be done with block + offset
 
     /**
      * @brief Links FCB of \p prev to point to FCB block of \p buf . Updates disk.
      * //
      */
-    void linkAndWriteFCBs(bool parent, FileControlBlock::fcb_t buf, fat_entry_t fcb_block, Inode *prev);
+    static void linkAndWriteFCBs(bool parent, FileControlBlock::fcb_t buf, fat_entry_t fcb_block, Inode *prev);
 
-    Inode *root;
-    bool initialized;
+    Inode *root = nullptr;
+    bool initialized = false;
     OpenFilesTable oft;
 };
 
