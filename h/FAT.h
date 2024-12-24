@@ -14,7 +14,7 @@ public: // temporary
     static void clearMemory();
 
 private:
-    friend class DirectorySystem;
+    friend class FileSystem;
 
     /**
      * @brief Reads FAT and Control blocks from disk and initializes class fields.
@@ -37,6 +37,15 @@ private:
      * @return 0 if no space
     */
     static fat_entry_t takeBlocks(block_cnt_t num);
+
+    /**
+     * @brief Tries to allocate blocks for fcb and data.
+     * @param fcb_block return value
+     * @param data_block return value
+     * @param data_size data size in blocks
+     * @return
+     */
+    static int allocateFileSpace(adisk_t *fcb_block, adisk_t *data_block, const block_cnt_t data_size);
 
     /**
      * @brief Frees \p num of blocks.

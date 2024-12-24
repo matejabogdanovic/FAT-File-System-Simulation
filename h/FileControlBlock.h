@@ -9,7 +9,7 @@ public:
         char path[PATH_NAME_SZ] = {0};
         FILE_EXT ext;
         block_cnt_t data_size;
-        fat_entry_t data_block;
+        adisk_t data_block;
         adisk_t fcb_block;
         adisk_t child, bro;
         char_t child_offs, bro_offs;
@@ -20,12 +20,12 @@ public:
         explicit FCB(const char path[PATH_NAME_SZ],
                      FILE_EXT extension,
                      block_cnt_t data_size,
-                     fat_entry_t data_block,
+                     adisk_t data_block,
                      adisk_t fcb_block,
-                     adisk_t child,
-                     adisk_t bro,
-                     char_t child_offs,
-                     char_t bro_offs);
+                     adisk_t child = 0,
+                     adisk_t bro = 0,
+                     char_t child_offs = 0,
+                     char_t bro_offs = 0);
 
         void printFCB();
     };
@@ -43,7 +43,7 @@ private:
 
     friend class FAT;
 
-    friend class DirectorySystem;
+    friend class FileSystem;
 
     /**
      * @brief Populates \p buf with given parameters.
@@ -54,7 +54,7 @@ private:
                            const char path[PATH_NAME_SZ],
                            FILE_EXT extension,
                            block_cnt_t data_size,
-                           fat_entry_t data_block,
+                           adisk_t data_block,
                            adisk_t fcb_block = 0,
                            adisk_t child = 0,
                            adisk_t bro = 0,
@@ -62,4 +62,6 @@ private:
                            char_t bro_offs = 0);
 
     static int populateFCB(fcb_t buf, FileControlBlock::FCB *fcb);
+
+    static void linkFCBs(const FCB *fcb, FCB *prev_fcb, bool is_prev_parent);
 };

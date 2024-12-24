@@ -83,14 +83,12 @@ int Inode::findToLink(Inode *root, Inode *node, Inode **link_to) {
     return link_with_parent;
 }
 
-int Inode::link(bool link_with_parent, Inode *node, Inode *prev) {
-    if(!node || !prev)return -1;
-    if(link_with_parent) {
+void Inode::linkInodes(Inode *node, Inode *prev, bool is_prev_parent) {
+    if(is_prev_parent) {
         prev->child = node;
     } else {
         prev->bro = node;
     }
-    return 0;
 }
 
 void Inode::printInode() {

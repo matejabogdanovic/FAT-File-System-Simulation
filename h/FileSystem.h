@@ -2,7 +2,7 @@
 #include "FAT.h"
 #include "Inode.h"
 
-class DirectorySystem {
+class FileSystem {
 public:
     /**
      * @brief Resets root block to contain only root folder. Clears \b just the root block.
@@ -13,16 +13,18 @@ public:
      * @brief Prints file system tree starting from root directory.
      * @return <0 if error
      */
-    static int printTree();
+    int printTree();
 
-    static DirectorySystem &get();
+    static FileSystem &get();
 
-    ~DirectorySystem();
+    const char *getWorkingDirectoryName();
+
+    ~FileSystem();
 
 private:
     friend class File;
 
-    DirectorySystem();
+    FileSystem();
 
     /**
      * @brief
@@ -41,20 +43,21 @@ private:
     int close(FHANDLE file);
 
     /**
-     * @brief Initializes FAT. Allocates directory tree starting from the root directory.
+     * @brief Allocates directory tree starting from the root directory.
      * @return <0 if error
      */
     int init();
 
-    static Inode *loadTree(adisk_t blk); // should be done with block + offset
+    static Inode *loadTree(adisk_t blk);
 
-    /**
-     * @brief Links FCB of \p prev to point to FCB block of \p buf . Updates disk.
-     * //
-     */
-    static void linkAndWriteFCBs(bool parent, FileControlBlock::fcb_t buf, fat_entry_t fcb_block, Inode *prev);
+    inline Inode *getWorkingDirectory() const;
+
+    int setWorkingDirectory(Inode *working);
+
+    inline static block_cnt_t sizeToBlocks(size_t size);
 
     Inode *root = nullptr;
+    Inode *working = nullptr;
     bool initialized = false;
     OpenFilesTable oft;
 };

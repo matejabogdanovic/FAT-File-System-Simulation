@@ -1,6 +1,13 @@
 #include "../h/OpenFilesTable.h"
 #include "../h/PrintHex.h"
 
+OpenFilesTable::OpenFilesTable() {
+    for(dchar_t i = 0; i < OFT_SZ; i++) {
+        table[i][0] = i + 1;
+        table[i][1] = (dchar_t) 0;
+    }
+}
+
 void OpenFilesTable::printFHANDLE(FHANDLE file) {
     std::cout << "\n====================";
     std::cout << std::dec << "\nFor FHANDLE: " << file << std::endl;
@@ -66,5 +73,7 @@ void OpenFilesTable::releaseEntry(FHANDLE fhandle) {
 
     free_vector[i] &= ~(uint64_t) (1 << j);
 }
+
+
 
 

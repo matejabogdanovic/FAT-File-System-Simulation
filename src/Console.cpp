@@ -6,13 +6,13 @@ int Console::open() {
 
     std::string command;
     while(true) {
-        std::cout << DirectorySystem::getWorkingDirectoryName() << ">";
+        std::cout << FileSystem::get().getWorkingDirectoryName() << ">";
 
         std::getline(std::cin, command);
         if(command == "exit")
             break;
         else if(command == "tree") {
-            DirectorySystem::printTree();
+            FileSystem::get().printTree();
         } else if(command == "help pls") {
             printHelp();
         } else {

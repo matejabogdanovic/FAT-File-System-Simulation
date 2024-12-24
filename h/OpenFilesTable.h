@@ -2,14 +2,9 @@
 #include "TypesAndConstants.h"
 
 class OpenFilesTable {
-public:
+    friend class FileSystem;
 
-    OpenFilesTable() {
-        for(dchar_t i = 0; i < OFT_SZ; i++) {
-            table[i][0] = i + 1;
-            table[i][1] = (dchar_t) 0;
-        }
-    }
+    OpenFilesTable();
 
     /**
      * @brief Print up to \p limit row.
@@ -43,7 +38,6 @@ public:
      */
     void releaseEntry(FHANDLE fhandle);
 
-private:
     oft_t table{ };
     uint64_t free_vector[FREE_V_SZ] = {0};
 };

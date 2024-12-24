@@ -17,12 +17,12 @@ struct Inode {
     static Inode *makeNode(FileControlBlock::fcb_t fcb);
 
     /**
-     * @brief Finds parent/brother to link \p node into tree, starting search from \p root.
+     * @brief Finds parent/brother to linkInodes \p node into tree, starting search from \p root.
      * @return <0 if error
      */
     static int findToLink(Inode *root, Inode *node, Inode **link_to);
 
-    static int link(bool link_with_parent, Inode *node, Inode *prev);
+    static void linkInodes(Inode *node, Inode *prev, bool is_prev_parent);
 
     void printInode();
 

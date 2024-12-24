@@ -1,8 +1,8 @@
-#include "../h/DirectorySystem.h"
+#include "../h/FileSystem.h"
 #include "../h/HDisk.h"
 #include "../h/File.h"
 #include "../h/PrintHex.h"
-
+#include "../h/Console.h"
 
 /*
 * This is a FAT simulation. Entry - 8bit, 2^8 blocks. Each block is 2^8*1B.
@@ -23,7 +23,7 @@
 
 void reset() {
     //FAT::clearMemory();
-    DirectorySystem::clearRoot();
+    FileSystem::clearRoot();
     FAT::clearFAT();
 }
 
@@ -44,13 +44,13 @@ void printBlocks() {
 
 //TODO: ne koristiti fcb_t vec samo FCB a kad treba upis na disk, tek onda raditi konverziju
 int main() {
-    //reset();
+    // reset();
     std::cout << "File system init.\n";
 
     //
     File *f, *f1, *f2;
     try {
-        f = new File("/Ime/I2/I3/I4/f", FILE_EXT::MB, 1);
+        f = new File("/Ime/I", FILE_EXT::MB, 1);
         // f1 = new File("/Ime/I", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
@@ -62,7 +62,8 @@ int main() {
     //std::cout << std::dec << "FILE HANDLE: " << f;
     delete f;
     //delete f1;
-    DirectorySystem::printTree();
+    //Console::open();
+    FileSystem::get().printTree();
     // delete f2;
 
     printBlocks();
