@@ -89,16 +89,22 @@ void FAT::clearMemory() { // TODO: change place
     }
 }
 
-int FAT::allocateFileSpace(adisk_t *fcb_block, adisk_t *data_block, const block_cnt_t data_size) {
-    // allocate fcb block
-    *fcb_block = FAT::takeBlocks(1); // todo 1/8th
-    if(!(*fcb_block)) {// no space for fcb
-        return -1;
+int FAT::allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
+                           adisk_t *fcb_block) {
+
+    if(fcb_block != nullptr) {
+        // allocate fcb block
+        *fcb_block = FAT::takeBlocks(1); // todo 1/8th
+        if(!(*fcb_block)) {// no space for fcb
+            return -1;
+        }
     }
+
     // allocate data blocks
     *data_block = FAT::takeBlocks(data_size);
     if(!(*data_block)) {// no space for data
-        FAT::releaseBlocks(*fcb_block, 1);
+        if(fcb_block != nullptr)
+            FAT::releaseBlocks(*fcb_block, 1);
         return -2;
     }
     return 0;

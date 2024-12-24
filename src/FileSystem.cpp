@@ -16,7 +16,7 @@ int FileSystem::init() {
     std::cout << "\n======Loading Tree FINISHED======\n";
     working = root;
     //root->printInode();
-
+    //setWorkingDirectory(root->child->bro); // TODO REMOVE
     initialized = true;
     return 0;
 }
@@ -38,49 +38,50 @@ Inode *FileSystem::loadTree(adisk_t block) {
     return node;
 }
 
-FHANDLE FileSystem::open(pathname_t path, FILE_EXT extension, size_t size) {
+FHANDLE FileSystem::open(pathname_t pathname, FILE_EXT extension, size_t size) {
 
     block_cnt_t data_size = sizeToBlocks(size);
 
     // trying to find node to link current file
-    FileControlBlock::FCB *fcb = new FileControlBlock::FCB(path, extension, data_size, 0, 0);
-    Inode *prev, *node = new Inode(fcb);
-    int is_prev_parent = Inode::findToLink(root, node, &prev);
+    FileControlBlock::FCB *fcb = nullptr;
+    Inode *prev = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    Inode *start = (pathname[0] != '/'
+                    ? getWorkingDirectory() : root); // if it's full path, start from root, else from working dir
+
+    char path[PATH_NAME_SZ] = {0}; // copy path name
+    strcpy(path, pathname);
+
+    Inode::Status ret = Inode::searchTree(start, path, extension, &is_prev_parent, &prev, &node);
+    if(ret < 0)return ret;
+
 
     std::cout << " \n======Linking with ";
 
     adisk_t data_block = 0; // it's block where the data is stored
     adisk_t fcb_block = 0;
-    switch(is_prev_parent) {
-        case 0: // needs linking
-        case 1:
-            std::cout << (is_prev_parent ? "parent======\n" : "brother======\n");
 
-            if(FAT::allocateFileSpace(&fcb_block, &data_block, data_size) < 0) {
-                delete node;
-                return -1;
-            }
-            // update fcb
-            node->fcb->data_block = data_block;
-            node->fcb->fcb_block = fcb_block;
+    if(ret == Inode::FILE_EXISTS) {
+        std::cout << "no one======\n";
+        std::cout << "ALREADY EXISTS.\n";
+        fcb = node->fcb;
+    } else {
+        std::cout << (is_prev_parent ? "parent======\n" : "brother======\n");
 
-            // link FCBs on disk
-            FileControlBlock::linkFCBs(node->fcb, prev->fcb, is_prev_parent);
-
-            // link tree nodes
-            Inode::linkInodes(node, prev, is_prev_parent);
-            break;
-        case 2: // already exists
-            std::cout << "no one======\n";
-            std::cout << "ALREADY EXISTS.\n";
-            // deallocate unnecessary node
+        if(FAT::allocateFileSpace(&data_block, data_size, &fcb_block) < 0) {
             delete node;
-            node = prev;
-            fcb = node->fcb;
-            break;
-        default: // error
-            return is_prev_parent;
+            return -1;
+        }
+        fcb = new FileControlBlock::FCB(path, extension, data_size, data_block, fcb_block);
+        node = new Inode(fcb);
+
+        // link FCBs on disk
+        FileControlBlock::linkFCBs(node->fcb, prev->fcb, is_prev_parent);
+
+        // link tree nodes
+        Inode::linkInodes(node, prev, is_prev_parent);
     }
+
 
     // usually we would need FCB address to write in OFT but since it's write back, we will directly write in data block
     return oft.set(fcb->data_block,
@@ -90,11 +91,14 @@ FHANDLE FileSystem::open(pathname_t path, FILE_EXT extension, size_t size) {
 int FileSystem::close(FHANDLE file) {
     std::cout << "\n=====CLOSING: " << file << "=====";
     std::cout << "\n=====FREE OFT=====\n";
+    oft.printFHANDLE(file);
+
     oft.releaseEntry(file);
     std::cout << "OFT entry freed.\n";
+
     FAT::saveToDisk();
 
-    oft.printFHANDLE(file);
+
     std::cout << "=====CLOSED: " << file << "=====\n";
     return 0;
 }
@@ -107,9 +111,8 @@ void FileSystem::clearRoot() {
     HDisk::get().writeBlock(block, ROOT_BLK);
 }
 
-int FileSystem::printTree() {
+void FileSystem::printTree() const {
     Inode::printTree(FileSystem::get().root);
-    return 0;
 }
 
 FileSystem &FileSystem::get() {
@@ -120,7 +123,7 @@ FileSystem &FileSystem::get() {
 FileSystem::FileSystem() {
     FAT::init();
 
-    FileSystem::init();
+    if(FileSystem::init() < 0)throw -1;
 }
 
 Inode *FileSystem::getWorkingDirectory() const {
@@ -139,6 +142,26 @@ const char *FileSystem::getWorkingDirectoryName() {
 
 block_cnt_t FileSystem::sizeToBlocks(size_t size) {
     return (size + BLOCK_SZ - 1) / BLOCK_SZ;
+}
+
+int FileSystem::remove(pathname_t pathname, FILE_EXT ext) { // todo optimize to search from working directory
+
+
+    Inode *start = (pathname[0] == '/'
+                    ? root : getWorkingDirectory()); // if it's full path, start from root, else from working
+
+    Inode *prev = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    char path[PATH_NAME_SZ] = {0};
+    strcpy(path, pathname);
+
+    Inode::Status ret = Inode::searchTree(start, path, ext, &is_prev_parent, &prev, &node);
+    if(ret != Inode::FILE_EXISTS)return (ret < 0) ? ret : -1;
+    // todo
+    std::cout << "Need to remove: " << node->fcb->path << std::endl;
+    std::cout << "Previous node: " << prev->fcb->path << std::endl;
+    std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
+    return 0;
 }
 
 

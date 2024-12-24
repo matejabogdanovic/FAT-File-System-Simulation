@@ -5,18 +5,27 @@
 class FileSystem {
 public:
     /**
+     * @brief
+     * @return instance of FileSystem
+     */
+    static FileSystem &get();
+
+    /**
      * @brief Resets root block to contain only root folder. Clears \b just the root block.
      */
-    static void clearRoot();
+    static void clearRoot(); // temporary public
+
+    int remove(pathname_t path, FILE_EXT ext);
 
     /**
      * @brief Prints file system tree starting from root directory.
-     * @return <0 if error
      */
-    int printTree();
+    void printTree() const;
 
-    static FileSystem &get();
-
+    /**
+     * @brief
+     * @return current working directory name
+     */
     const char *getWorkingDirectoryName();
 
     ~FileSystem();

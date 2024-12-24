@@ -40,12 +40,10 @@ private:
 
     /**
      * @brief Tries to allocate blocks for fcb and data.
-     * @param fcb_block return value
-     * @param data_block return value
-     * @param data_size data size in blocks
      * @return
      */
-    static int allocateFileSpace(adisk_t *fcb_block, adisk_t *data_block, const block_cnt_t data_size);
+    static int allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
+                                 adisk_t *fcb_block = nullptr);
 
     /**
      * @brief Frees \p num of blocks.

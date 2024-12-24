@@ -12,7 +12,7 @@
 */
 
 
-// TODO: take care of 1/8th block allocation and not just from root block
+// TODO: take care of 1/8th block allocation and not just from root block (LINKED ALLOCATION IN FILESYSTEM)
 // [0 1 2 3 4 5 6 7] - koristiti poslednju osminu da se vodi racuna o slobodnim osminama
 // koristiti control block da se vodi racuna o tome
 // dinamicki?
@@ -28,6 +28,7 @@ void reset() {
 }
 
 void printBlocks() {
+
     block_t buffer;
     HDisk::get().readBlock(buffer, FAT_BLK);
 
@@ -35,22 +36,23 @@ void printBlocks() {
     std::cout << std::endl;
     HDisk::get().readBlock(buffer, CONTROL_BLK);
 
-    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
-    std::cout << std::endl;
+    PrintHex::printBlock(buffer, BLOCK_SZ / 4, 16);
+    std::cout << "..." << std::endl;
     HDisk::get().readBlock(buffer, ROOT_BLK);
 
-    PrintHex::printBlock(buffer, BLOCK_SZ, 16);
+    PrintHex::printBlock(buffer, BLOCK_SZ / 4, 16);
+    std::cout << "...";
 }
 
 //TODO: ne koristiti fcb_t vec samo FCB a kad treba upis na disk, tek onda raditi konverziju
 int main() {
-    // reset();
+    //reset();
     std::cout << "File system init.\n";
 
     //
     File *f, *f1, *f2;
     try {
-        f = new File("/Ime/I", FILE_EXT::MB, 1);
+        f = new File("/dir/f", FILE_EXT::MB, 1);
         // f1 = new File("/Ime/I", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
@@ -64,6 +66,7 @@ int main() {
     //delete f1;
     //Console::open();
     FileSystem::get().printTree();
+    std::cout << "Removing:\n" << FileSystem::get().remove("/dir", FILE_EXT::DIR) << std::endl;
     // delete f2;
 
     printBlocks();
