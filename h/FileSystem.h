@@ -28,6 +28,10 @@ public:
      */
     const char *getWorkingDirectoryName();
 
+    const char *setWDtoParent();
+
+    void listWDFiles() const;
+
     ~FileSystem();
 
 private:

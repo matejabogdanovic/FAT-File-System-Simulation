@@ -11,8 +11,14 @@ int Console::open() {
         std::getline(std::cin, command);
         if(command == "exit")
             break;
-        else if(command == "tree") {
+        else if(command == "cd ..") {
+            FileSystem::get().setWDtoParent();
+        } else if(command == "ls") {
+            FileSystem::get().listWDFiles();
+        } else if(command == "tree -root") {
             FileSystem::get().printTree();
+        } else if(command == "tree") {
+            //FileSystem::get().printTree(true);
         } else if(command == "help pls") {
             printHelp();
         } else {
@@ -26,5 +32,5 @@ int Console::open() {
 void Console::printHelp() {
     std::cout << "No problem. Check out these sick commands!\n"
               << "'exit' - quit console\n"
-              << "'tree' - list tree\n";
+              << "'tree -root' - list tree\n";
 }

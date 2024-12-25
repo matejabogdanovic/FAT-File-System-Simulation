@@ -18,7 +18,7 @@ int FileSystem::init() {
     working = root;
 
     //root->printInode();
-    //setWorkingDirectory(root->child->bro); // TODO REMOVE
+    setWorkingDirectory(root->child->bro->child); // TODO REMOVE
     initialized = true;
     return 0;
 }
@@ -122,7 +122,7 @@ void FileSystem::clearRoot() {
 }
 
 void FileSystem::printTree() const {
-    Inode::printTree(FileSystem::get().root);
+    Inode::printTree(root);
 }
 
 FileSystem &FileSystem::get() {
@@ -174,6 +174,20 @@ int FileSystem::remove(pathname_t pathname, FILE_EXT ext) { // todo optimize to 
     std::cout << "Logical parent is: " << logical_parent->fcb->path << std::endl;
     std::cout << "Written logical parent is: " << (node->parent ? node->parent->fcb->path : "0") << std::endl;
     return 0;
+}
+
+const char *FileSystem::setWDtoParent() {
+    if(working->parent) {
+        setWorkingDirectory(working->parent);
+    }
+    return getWorkingDirectoryName();
+}
+
+void FileSystem::listWDFiles() const {
+    for(Inode *next = working->child; next; next = next->bro) {
+        next->printInode();
+        std::cout << std::endl;
+    }
 }
 
 
