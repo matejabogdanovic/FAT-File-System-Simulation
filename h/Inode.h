@@ -28,7 +28,7 @@ struct Inode {
     /**
      * @brief Searches for a node with a given \p path and \p extension .
      * @param start starting node
-     * @param path return value, wanted file path - if relative path, will be changed to full
+     * @param path wanted file path - if relative path, will be changed to full
      * @param extension wanted file extension
      * @param is_prev_parent return value, describes relation between \p previous and \p node
      * @param previous return value, previous node in a tree
@@ -47,6 +47,22 @@ struct Inode {
     static void printTree(const Inode *node, unsigned parent_name_size = 0, int level = 0);
 
     ~Inode();
+
+private:
+    /**
+     * @brief Initializes these variables just using \p path and \p root_path . Tokenization will start, then
+     * just call 'strtok(NULL, "/")' to get new \p next_folder to look for.
+     * @param needed_inode_path return value, calculated full path to the next folder/file to look for
+     * @param needed_inode_name return value, calculated name of the next folder/file to look for
+     * @param path_copy address used for tokenization, shouldn't be accessed!
+     * @param path relative or absolute/full path to wanted file that is being opened. It will be changed to full path.
+     * @param root_path absolute path to root directory or working, depending on if \p path is absolute or relative
+     */
+    static void startTokenization(char needed_inode_path[PATH_NAME_SZ],
+                                  char **needed_inode_name,
+                                  char path_copy[PATH_NAME_SZ],
+                                  char *path,
+                                  const char *root_path);
 };
 
 

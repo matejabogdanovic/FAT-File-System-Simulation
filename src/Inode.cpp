@@ -42,6 +42,35 @@ Inode *Inode::makeNode(FileControlBlock::fcb_t fcb) {
     return node;
 }
 
+void Inode::startTokenization(char needed_inode_path[PATH_NAME_SZ],
+                              char **needed_inode_name,
+                              char path_copy[PATH_NAME_SZ],
+                              char *path, const char *root_path) {
+    char full_path[PATH_NAME_SZ] = {0}; // full path even if working directory isn't really root
+
+    strcpy(path_copy, path); // copy path, can be relative or full path
+    if(path[0] != '/') {
+        // isn't full path so, find full path by concatenating working directory with path
+        strcpy(full_path, root_path);
+        if(strcmp(root_path, "/") != 0)  // if working isn't root => working + /
+            strcat(full_path, "/");
+
+        strcpy(needed_inode_path, full_path); // needed_node = working/
+        strcat(full_path, path); // path_name is working/ + relative path
+
+
+        strcpy(path, full_path); // write full path name
+    } else {
+        //strcpy(full_path, path);
+        strcpy(needed_inode_path, root_path); // needed_node = /
+    }
+
+
+    *needed_inode_name = strtok(path_copy, "/");
+
+    strcat(needed_inode_path, *needed_inode_name); // it's /+name = /name (working_dir/+name = working_dir/name )
+}
+
 Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
                                 Status *is_prev_parent, Inode **previous, Inode **logical_parent, Inode **node) {
 
@@ -50,37 +79,18 @@ Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
 
     checkPathName(path)
 
-    char needed_node[PATH_NAME_SZ] = {0};
-    char pathstr[PATH_NAME_SZ] = {0};
-    char path_name[PATH_NAME_SZ] = {0}; // full path even if working directory isn't really root
-    strcpy(pathstr, path); // copy path to pathstr, can be relative or full path
-    if(path[0] != '/') {
-        // isn't full path so, find full path by concatenating working directory with path
-        strcpy(path_name, start->fcb->path);
-        if(strcmp(start->fcb->path, "/") != 0)  // if working isn't root => working + /
-            strcat(path_name, "/");
+    char needed_inode_path[PATH_NAME_SZ] = {0};
+    char path_copy[PATH_NAME_SZ] = {0};
+    char *needed_inode_name = nullptr;
 
-        strcpy(needed_node, path_name); // needed_node = working/
-        strcat(path_name, path); // path_name is working/ + relative path
-
-
-        strcpy(path, path_name); // write full path name
-    } else {
-        strcpy(path_name, path);
-        strcpy(needed_node, start->fcb->path); // needed_node = /
-    }
-
-
-    char *next_folder = strtok(pathstr, "/");
-
-    strcat(needed_node, next_folder); // it's /+name = /name (working_dir/+name = working_dir/name )
+    Inode::startTokenization(needed_inode_path, &needed_inode_name, path_copy, path, start->fcb->path);
 
     Inode *head = start->child, *prev = start, *log_p = start;
     Status link_status = LINK_WITH_PARENT;
     while(head) {
-        if(!strcmp(head->fcb->path, needed_node)) { // path found
+        if(!strcmp(head->fcb->path, needed_inode_path)) { // path found
             // check if found file is the same as the one being opened
-            if(head->fcb->ext == extension && !strcmp(head->fcb->path, path_name)) {
+            if(head->fcb->ext == extension && !strcmp(head->fcb->path, path)) {
                 *previous = prev;
                 *logical_parent = log_p;
                 *node = head;
@@ -94,15 +104,15 @@ Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
             }
 
             // found directory is correct
-            next_folder = strtok(NULL, "/"); // grab next directory to visit (or filename if last)
+            needed_inode_name = strtok(NULL, "/"); // grab next directory to visit (or filename if last)
 
-            if(!next_folder) { // path is found, just need check every file in this directory and if alright, link with bro
+            if(!needed_inode_name) { // path is found, just need check every file in this directory and if alright, link with bro
                 nextBro(link_status, prev, head)
                 continue;
             }
 
-            strcat(needed_node, "/");
-            strcat(needed_node, next_folder);
+            strcat(needed_inode_path, "/");
+            strcat(needed_inode_path, needed_inode_name);
 
             nextChild(link_status, prev, head, log_p)
         } else { // path not found, check next bro
@@ -160,3 +170,5 @@ void Inode::printTree(const Inode *node, unsigned parent_name_size, int level) {
         printTree(node->bro, parent_name_size, level);
     }
 }
+
+
