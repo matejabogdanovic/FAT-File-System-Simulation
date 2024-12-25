@@ -22,12 +22,13 @@ int FileControlBlock::populateFCB(fcb_t buf,
                                   block_cnt_t data_size,
                                   adisk_t data_block,
                                   adisk_t fcb_block,
+                                  adisk_t fcb_block_offs,
                                   adisk_t child,
-                                  adisk_t bro,
                                   char_t child_offs,
+                                  adisk_t bro,
                                   char_t bro_offs) {
 
-    auto *fcb = new FCB(path, extension, data_size, data_block, fcb_block, child, bro, child_offs,
+    auto *fcb = new FCB(path, extension, data_size, data_block, fcb_block, child, child_offs, bro,
                         bro_offs);
 
     memcpy(buf, fcb, sizeof(FileControlBlock::FCB));
@@ -45,7 +46,7 @@ int FileControlBlock::populateFCB(fcb_t buf, FileControlBlock::FCB *fcb) {
     return 0;
 }
 
-void FileControlBlock::linkFCBs(const FCB *fcb, FCB *prev_fcb,
+void FileControlBlock::linkFCBs(FCB *fcb, FCB *prev_fcb,
                                 bool is_prev_parent) {
 
     block_t blk = {0};
@@ -70,10 +71,21 @@ void FileControlBlock::linkFCBs(const FCB *fcb, FCB *prev_fcb,
 
 FileControlBlock::FCB::FCB(const char path[PATH_NAME_SZ], FILE_EXT extension, block_cnt_t data_size,
                            adisk_t data_block,
-                           adisk_t fcb_block, adisk_t child, adisk_t bro, char_t child_offs, char_t bro_offs)
-        : ext(extension), data_size(data_size),
-          data_block(data_block), fcb_block(fcb_block), child(child),
-          bro(bro), child_offs(child_offs), bro_offs(bro_offs) {
+                           adisk_t fcb_block,
+                           adisk_t fcb_block_offs,
+                           adisk_t child,
+                           char_t child_offs,
+                           adisk_t bro,
+                           char_t bro_offs)
+        : ext(extension),
+          data_size(data_size),
+          data_block(data_block),
+          fcb_block(fcb_block),
+          fcb_block_offs(fcb_block_offs),
+          child(child),
+          child_offs(child_offs),
+          bro(bro),
+          bro_offs(bro_offs) {
 
 
     strcpy(this->path, path);

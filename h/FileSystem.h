@@ -57,7 +57,7 @@ private:
      */
     int init();
 
-    static Inode *loadTree(adisk_t blk);
+    static Inode *loadTree(adisk_t blk, Inode *logical_parent = nullptr);
 
     inline Inode *getWorkingDirectory() const;
 

@@ -4,9 +4,10 @@
 #include "../h/FileSystem.h"
 #include <cstring>
 
-#define nextChild(link_with_parent, prev, head)\
+#define nextChild(link_with_parent, prev, head, log_p)\
 link_with_parent = LINK_WITH_PARENT;\
 prev = head;\
+log_p = head;\
 head = head->child;
 
 #define nextBro(link_with_parent, prev, head)\
@@ -21,8 +22,8 @@ if(path[0] != '/' && strlen(FileSystem::get().getWorkingDirectoryName()) + path_
 return ERROR_INVALID_PATH_NAME;\
 if(path_len > PATH_NAME_SZ - 1 || path[path_len - 1] == '/')return ERROR_INVALID_PATH_NAME; // no name
 
-Inode::Inode(FileControlBlock::FCB *fcb, Inode *child, Inode *bro)
-        : fcb(fcb), child(child), bro(bro) {
+Inode::Inode(FileControlBlock::FCB *fcb, Inode *child, Inode *bro, Inode *parent)
+        : fcb(fcb), child(child), bro(bro), parent(parent) {
 }
 
 Inode::~Inode() {
@@ -42,7 +43,7 @@ Inode *Inode::makeNode(FileControlBlock::fcb_t fcb) {
 }
 
 Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
-                                Status *is_prev_parent, Inode **previous, Inode **node) {
+                                Status *is_prev_parent, Inode **previous, Inode **logical_parent, Inode **node) {
 
     if(!start || !is_prev_parent || !previous || !node)return ERROR_INVALID_ARGS;
     if(!start->fcb)return ERROR_INVALID_FCB;
@@ -74,13 +75,14 @@ Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
 
     strcat(needed_node, next_folder); // it's /+name = /name (working_dir/+name = working_dir/name )
 
-    Inode *head = start->child, *prev = start;
+    Inode *head = start->child, *prev = start, *log_p = start;
     Status link_status = LINK_WITH_PARENT;
     while(head) {
         if(!strcmp(head->fcb->path, needed_node)) { // path found
             // check if found file is the same as the one being opened
             if(head->fcb->ext == extension && !strcmp(head->fcb->path, path_name)) {
                 *previous = prev;
+                *logical_parent = log_p;
                 *node = head;
                 *is_prev_parent = link_status;
                 return FILE_EXISTS;
@@ -102,7 +104,7 @@ Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
             strcat(needed_node, "/");
             strcat(needed_node, next_folder);
 
-            nextChild(link_status, prev, head)
+            nextChild(link_status, prev, head, log_p)
         } else { // path not found, check next bro
             nextBro(link_status, prev, head)
         }
@@ -111,12 +113,14 @@ Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
     // return values
     *previous = prev;
     *node = nullptr;
+    *logical_parent = log_p;
     *is_prev_parent = link_status;
     return link_status;
 }
 
-void Inode::linkInodes(Inode *node, Inode *prev, bool is_prev_parent) {
-    if(is_prev_parent) {
+void Inode::linkInodes(Inode *node, Inode *prev, bool is_prev_parent, Inode *logical_parent) {
+    node->parent = logical_parent; // link with logical parent
+    if(is_prev_parent) { // link with previous
         prev->child = node;
     } else {
         prev->bro = node;

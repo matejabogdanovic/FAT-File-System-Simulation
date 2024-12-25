@@ -5,9 +5,9 @@ struct Inode {
 
 
     FileControlBlock::FCB *fcb;
-    Inode *child, *bro;
+    Inode *child, *bro, *parent;
 
-    explicit Inode(FileControlBlock::FCB *fcb, Inode *child = nullptr, Inode *bro = nullptr);
+    explicit Inode(FileControlBlock::FCB *fcb, Inode *child = nullptr, Inode *bro = nullptr, Inode *parent = nullptr);
 
     /**
     * @brief Creates and allocates one Directory node from \p fcb block.
@@ -32,14 +32,15 @@ struct Inode {
      * @param extension wanted file extension
      * @param is_prev_parent return value, describes relation between \p previous and \p node
      * @param previous return value, previous node in a tree
+     * @param logical_parent return value, logical parent in tree hierarchy
      * @param node return value, if node doesn't exist, it points to - nullptr
      * @return If < 0 - error - check status. If > 0 - either is the same as *\p is_prev_parent or it is 'FILE_EXISTS'
      * indicator.
      */
     static Inode::Status searchTree(Inode *start, char *path, FILE_EXT extension,
-                                    Status *is_prev_parent, Inode **previous, Inode **node);
+                                    Status *is_prev_parent, Inode **previous, Inode **logical_parent, Inode **node);
 
-    static void linkInodes(Inode *node, Inode *prev, bool is_prev_parent);
+    static void linkInodes(Inode *node, Inode *prev, bool is_prev_parent, Inode *logical_parent = nullptr);
 
     void printInode();
 

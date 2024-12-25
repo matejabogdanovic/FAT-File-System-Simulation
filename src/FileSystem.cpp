@@ -13,8 +13,10 @@ int FileSystem::init() {
     std::cout << "\n======Loading Tree======\n";
     root = FileSystem::loadTree(ROOT_BLK);
     if(!root)return -1;
+    //Inode::printTree(root);
     std::cout << "\n======Loading Tree FINISHED======\n";
     working = root;
+
     //root->printInode();
     //setWorkingDirectory(root->child->bro); // TODO REMOVE
     initialized = true;
@@ -22,18 +24,21 @@ int FileSystem::init() {
 }
 
 // todo should be done with block + offset
-Inode *FileSystem::loadTree(adisk_t block) {
+Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent) {
     block_t fcb = {0};
     HDisk::get().readBlock(fcb, block);
-    FileControlBlock::printFCBt(fcb);
+    //FileControlBlock::printFCBt(fcb);
     Inode *node = Inode::makeNode(fcb);
     if(!node)return nullptr;
+    if(logical_parent) {
+        node->parent = logical_parent;
+    }
 
     if(node->fcb->bro)
-        node->bro = loadTree(node->fcb->bro);
+        node->bro = loadTree(node->fcb->bro, logical_parent);
 
     if(node->fcb->child)
-        node->child = loadTree(node->fcb->child);
+        node->child = loadTree(node->fcb->child, node);
 
     return node;
 }
@@ -44,17 +49,22 @@ FHANDLE FileSystem::open(pathname_t pathname, FILE_EXT extension, size_t size) {
 
     // trying to find node to link current file
     FileControlBlock::FCB *fcb = nullptr;
-    Inode *prev = nullptr, *node = nullptr;
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
-    Inode *start = (pathname[0] != '/'
-                    ? getWorkingDirectory() : root); // if it's full path, start from root, else from working dir
-
+    // if it's full path, start from root, else from working dir
+    Inode *start = (pathname[0] != '/' ? getWorkingDirectory() : root);
     char path[PATH_NAME_SZ] = {0}; // copy path name
     strcpy(path, pathname);
 
-    Inode::Status ret = Inode::searchTree(start, path, extension, &is_prev_parent, &prev, &node);
+    Inode::Status ret = Inode::searchTree(start, path, extension, &is_prev_parent, &prev, &logical_parent, &node);
     if(ret < 0)return ret;
-
+    printTree();
+    std::cout << "Node: " << path << std::endl;
+    std::cout << "Previous node: " << prev->fcb->path << std::endl;
+    std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
+    std::cout << "Logical parent is: " << logical_parent->fcb->path << std::endl;
+    if(node && node->parent)
+        std::cout << "Written logical parent is: " << node->parent->fcb->path << std::endl;
 
     std::cout << " \n======Linking with ";
 
@@ -106,7 +116,7 @@ int FileSystem::close(FHANDLE file) {
 void FileSystem::clearRoot() {
     block_t block = {0};
     FileControlBlock::fcb_t fcb = {0};
-    FileControlBlock::populateFCB(fcb, "/", DIR, 0, 0, ROOT_BLK, 0, 0, 0, 0);
+    FileControlBlock::populateFCB(fcb, "/", DIR, 0, 0, ROOT_BLK);
     memcpy(block, fcb, sizeof(FileControlBlock::FCB));
     HDisk::get().writeBlock(block, ROOT_BLK);
 }
@@ -150,17 +160,19 @@ int FileSystem::remove(pathname_t pathname, FILE_EXT ext) { // todo optimize to 
     Inode *start = (pathname[0] == '/'
                     ? root : getWorkingDirectory()); // if it's full path, start from root, else from working
 
-    Inode *prev = nullptr, *node = nullptr;
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
     char path[PATH_NAME_SZ] = {0};
     strcpy(path, pathname);
 
-    Inode::Status ret = Inode::searchTree(start, path, ext, &is_prev_parent, &prev, &node);
+    Inode::Status ret = Inode::searchTree(start, path, ext, &is_prev_parent, &prev, &logical_parent, &node);
     if(ret != Inode::FILE_EXISTS)return (ret < 0) ? ret : -1;
     // todo
     std::cout << "Need to remove: " << node->fcb->path << std::endl;
     std::cout << "Previous node: " << prev->fcb->path << std::endl;
     std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
+    std::cout << "Logical parent is: " << logical_parent->fcb->path << std::endl;
+    std::cout << "Written logical parent is: " << (node->parent ? node->parent->fcb->path : "0") << std::endl;
     return 0;
 }
 

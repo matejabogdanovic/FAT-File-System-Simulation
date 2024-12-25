@@ -11,9 +11,12 @@ public:
         block_cnt_t data_size;
         adisk_t data_block;
         adisk_t fcb_block;
-        adisk_t child, bro;
-        char_t child_offs, bro_offs;
-        char_t padding[8] = {0};
+        adisk_t fcb_block_offs;
+        adisk_t child;
+        char_t child_offs;
+        adisk_t bro;
+        char_t bro_offs;
+        char_t padding[7] = {0};
         // char_t padding[11] = {0};
 
 
@@ -22,9 +25,10 @@ public:
                      block_cnt_t data_size,
                      adisk_t data_block,
                      adisk_t fcb_block,
+                     adisk_t fcb_block_offs = 0,
                      adisk_t child = 0,
-                     adisk_t bro = 0,
                      char_t child_offs = 0,
+                     adisk_t bro = 0,
                      char_t bro_offs = 0);
 
         void printFCB();
@@ -56,12 +60,13 @@ private:
                            block_cnt_t data_size,
                            adisk_t data_block,
                            adisk_t fcb_block = 0,
+                           adisk_t fcb_block_offs = 0,
                            adisk_t child = 0,
-                           adisk_t bro = 0,
                            char_t child_offs = 0,
+                           adisk_t bro = 0,
                            char_t bro_offs = 0);
 
     static int populateFCB(fcb_t buf, FileControlBlock::FCB *fcb);
 
-    static void linkFCBs(const FCB *fcb, FCB *prev_fcb, bool is_prev_parent);
+    static void linkFCBs(FCB *fcb, FCB *prev_fcb, bool is_prev_parent);
 };
