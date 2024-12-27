@@ -60,21 +60,8 @@ int FileSystem::getFileName(const char *path, int path_len, char *file_name) {
     return 0;
 }
 
-#define nextChild(link_with_parent, prev, head, log_p)\
-link_with_parent = Inode::Status::LINK_WITH_PARENT;\
-prev = head;\
-log_p = head;\
-head = head->child;
-
-#define nextBro(link_with_parent, prev, head)\
-link_with_parent = Inode::Status::LINK_WITH_BROTHER;\
-prev = head;\
-head = head->bro;
-
-
 struct NeededFile {
     char *name;
-    bool changed = true;
     int len = 0;
 
     NeededFile(char *name) : name(name) {
@@ -94,12 +81,14 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
         *is_prev_parent = Inode::Status::EXCEPTION_CAN_T_OPEN;
         return *is_prev_parent;
     }
+    bool is_relative_path = (path[0] != '/');
     char path_copy[PATHNAME_SZ + 1] = {0};
     strcpy(path_copy, path);
-
+// todo check path name for ex //..// invalid
     auto path_len = strlen(path_copy);
     if(path_copy[path_len - 1] == '/') {
-        path_copy[--path_len] = 0;// todo check path name for ex //..// invalid
+        if(extension != DIR)return Inode::ERROR_INVALID_PATH_NAME;
+        path_copy[--path_len] = 0;
         if(path_copy[path_len - 1] == '/')return Inode::ERROR_INVALID_PATH_NAME;
     }
     if(path_len > PATHNAME_SZ)return Inode::Status::ERROR_INVALID_PATH_NAME;
@@ -112,84 +101,69 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
     //std::cout << "File_name is " << filename << std::endl;
 
     // start tokenization
-    NeededFile needed_file = {strtok(path_copy, "/")};
 
-    *node = (path[0] == '/' ? root->child : getWorkingDirectory()->child);
-    *logical_parent = *previous = (path[0] == '/' ? root : getWorkingDirectory());
+
+    *node = (!is_relative_path ? root : getWorkingDirectory());
+    *logical_parent = *previous = (!is_relative_path ? root->parent : getWorkingDirectory()->parent);
     *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
-
-
-    goto check_relative_paths;
-    while((*node)) {
-
-        if(!strcmp(needed_file.name, (*node)->fcb->path)) {// found same name
-
-            // check if it's the last token
-            if(needed_file.name +
-               needed_file.len ==
-               path_len +
-               path_copy) { // path is found, just need check every file in this directory and if alright, link with bro
-                if((*node)->fcb->ext == extension) { // if same extension
-                    return Inode::Status::FILE_EXISTS;
-                }
-                nextBro(*is_prev_parent, *previous, (*node))
-            } else { // has to be directory because it's not over
-                if((*node)->fcb->ext != DIR) {
-                    nextBro(*is_prev_parent, *previous, (*node))
-                    continue;
-                }
-                // it's found ! so get next
-                needed_file = NeededFile{strtok(NULL, "/")};
-                nextChild(*is_prev_parent, *previous, (*node), *logical_parent)
+    int i = 0;
+    while(true) {
+        NeededFile needed_file = {strtok((i++) ? NULL : path_copy, "/")};
+        bool is_needed_file_last = (needed_file.name + needed_file.len == path_len + path_copy);
+        if(!strcmp(needed_file.name, ".")) {
+            // -||-
+            if(is_needed_file_last) {
+                return Inode::Status::FILE_EXISTS;
+            }
+        } else if(!strcmp(needed_file.name, "..")) {
+            if((*node)->parent) {
+                *node = (*node)->parent;
+                *logical_parent = (*node)->parent;
+                //*previous = nullptr;
+                //*is_prev_parent = nullptr;
+            }
+            if(is_needed_file_last) {
+                return Inode::Status::FILE_EXISTS;
             }
         } else {
-            nextBro(*is_prev_parent, *previous, (*node))
-        }
-
-
-        // if . or .. move to wanted place
-        check_relative_paths:
-        while(needed_file.changed) {
-            if(needed_file.name == nullptr) {// kinda works for .. but not for . /dir2/.
-                return Inode::Status::EXCEPTION_CAN_T_OPEN;
-            }
-            // todo (shouldn't happen) => only if it's just .././../../..
-
-            if(!strcmp(needed_file.name, "..")) {
-                // move up but not to root
-                if(*is_prev_parent == Inode::Status::LINK_WITH_PARENT) {
-                    if(*previous && (*previous)->parent) {
-                        *node = (*previous)->parent->child;
-                        *logical_parent = (*node)->parent;
-                        *previous = *logical_parent;
-                        *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
+            // move down
+            *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
+            *previous = *node;
+            *logical_parent = *previous;
+            *node = (*node)->child;
+            while(true) {
+                if(!(*node)) { // is null
+                    if(is_needed_file_last) {
+                        return *is_prev_parent;
+                    } else {
+                        return Inode::Status::ERROR_INVALID_PATH_NAME;
                     }
-                } else {
-                    if((*node) && (*node)->parent && (*node)->parent != root && (*node)->parent->parent) {
-                        (*node) = (*node)->parent->parent->child;
-                        *logical_parent = (*node)->parent;
-                        *previous = *logical_parent;
-                        *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
+                } else { // is not null
+                    if(is_needed_file_last) {
+                        if((*node)->fcb->ext == extension &&
+                           !strcmp((*node)->fcb->path, needed_file.name)) {
+                            return Inode::Status::FILE_EXISTS;
+                        } else {
+                            // move right
+                            *is_prev_parent = Inode::Status::LINK_WITH_BROTHER;
+                            *previous = *node;
+                            *node = (*node)->bro;
+                        }
+                    } else {
+                        if((*node)->fcb->ext == DIR &&
+                           !strcmp((*node)->fcb->path, needed_file.name)) {
+                            break; // found <3
+                        } else {
+                            // move right
+                            *is_prev_parent = Inode::Status::LINK_WITH_BROTHER;
+                            *previous = *node;
+                            *node = (*node)->bro;
+                        }
                     }
                 }
-
-
-                needed_file = NeededFile{strtok(NULL, "/")};
-            } //else if(!strcmp(needed_file.name, ".")) {
-                // needed_file = NeededFile{strtok(NULL, "/")};
-                // }
-            else
-                needed_file.changed = false;
+            }
         }
     }
-
-    if(strtok(NULL, "/"))
-        return Inode::Status::ERROR_INVALID_PATH_NAME; // INVALID PATH NAME, didn't find the wanted path
-    // return values
-
-    *node = nullptr;
-
-    return *is_prev_parent;
 }
 
 FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) {
@@ -205,10 +179,10 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     char file_name[FILENAME_SZ + 1] = {0};
     Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
                                                file_name);
-    if(ret < 0) {
-        if(ret != Inode::Status::EXCEPTION_CAN_T_OPEN)return ret;
-        node = node->parent;
-    }
+    if(ret < 0)
+        return ret;
+
+
     printTree();
     std::cout << "Node name: " << file_name << std::endl;
     if(node)
@@ -355,8 +329,7 @@ int FileSystem::setWDto(char *path) {
     }
 
     if(!node)return -10;
-    if(ret == Inode::Status::EXCEPTION_CAN_T_OPEN && node != root)
-        node = node->parent;
+
     setWorkingDirectory(node);
     return 0;
 }
