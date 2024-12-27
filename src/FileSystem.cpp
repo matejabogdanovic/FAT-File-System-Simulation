@@ -230,7 +230,7 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
 
     // usually we would need FCB address to write in OFT but since it's write back, we will directly write in data block
 
-
+    //if(fcb->ext == DIR)return -69; // todo can't open oft entry for directory + dont allocate data block etc
     FHANDLE handle = oft.set(fcb->data_block,
                              0); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
     if(handle >= 0) {

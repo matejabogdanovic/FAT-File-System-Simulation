@@ -3,7 +3,7 @@
 
 OpenFilesTable::OpenFilesTable() {
     for(dchar_t i = 0; i < OFT_SZ; i++) {
-        table[i][0] = i + 1;
+        table[i][0] = (dchar_t) 0;
         table[i][1] = (dchar_t) 0;
     }
 }
@@ -71,8 +71,8 @@ void OpenFilesTable::releaseEntry(FHANDLE fhandle) {
     if(fhandle < 0)return;
     auto i = fhandle / 64;
     auto j = fhandle % 64;
-    table[fhandle][0] = 0xffff;
-    table[fhandle][1] = 0xffff; // cursor
+    table[fhandle][0] = (dchar_t) 0;
+    table[fhandle][1] = (dchar_t) 0; // cursor
     free_vector[i] &= ~(uint64_t) (1 << j);
 }
 
