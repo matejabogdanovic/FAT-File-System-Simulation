@@ -17,7 +17,7 @@ void FileControlBlock::printFCBt(fcb_t fcb) {
 }
 
 int FileControlBlock::populateFCB(fcb_t buf,
-                                  const char path[PATH_NAME_SZ],
+                                  const char path[FILENAME_SZ + 1],
                                   FILE_EXT extension,
                                   block_cnt_t data_size,
                                   adisk_t data_block,
@@ -69,7 +69,7 @@ void FileControlBlock::linkFCBs(FCB *fcb, FCB *prev_fcb,
     PrintHex::printBlock(blk, BLOCK_SZ, 16);
 }
 
-FileControlBlock::FCB::FCB(const char path[PATH_NAME_SZ], FILE_EXT extension, block_cnt_t data_size,
+FileControlBlock::FCB::FCB(const char path[FILENAME_SZ + 1], FILE_EXT extension, block_cnt_t data_size,
                            adisk_t data_block,
                            adisk_t fcb_block,
                            adisk_t fcb_block_offs,

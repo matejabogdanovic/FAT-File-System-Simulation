@@ -2,12 +2,12 @@
 #include "../h/FileSystem.h"
 #include <cstring>
 
-File::File(pathname_t path, FILE_EXT extension, size_t size) {
+File::File(const char *path, FILE_EXT extension, size_t size) {
     handle = open(path, extension, size);
     if(handle < 0)throw handle;
 }
 
-int File::open(pathname_t path, FILE_EXT extension, size_t size) {
+int File::open(const char *path, FILE_EXT extension, size_t size) {
     if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -2;
 
     return FileSystem::get().open(path, extension, size);

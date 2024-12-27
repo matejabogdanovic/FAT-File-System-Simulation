@@ -20,6 +20,7 @@ struct Inode {
         ERROR_INVALID_ARGS = -1,
         ERROR_INVALID_FCB = -2,
         ERROR_INVALID_PATH_NAME = -3,
+        EXCEPTION_CAN_T_OPEN = -4,
         LINK_WITH_BROTHER = 0,
         LINK_WITH_PARENT = 1,
         FILE_EXISTS = 2
@@ -52,18 +53,15 @@ private:
     /**
      * @brief Initializes these variables just using \p path and \p root_path . Tokenization will start, then
      * just call 'strtok(NULL, "/")' to get new \p next_folder to look for.
-     * @param needed_inode_path return value, calculated full path to the next folder/file to look for
+     * @param starting_dir return value, calculated full path to the next folder/file to look for
      * @param needed_inode_name return value, calculated name of the next folder/file to look for
      * @param path_copy address used for tokenization, shouldn't be accessed!
      * @param path relative or absolute/full path to wanted file that is being opened. It will be changed to full path.
      * @param root_path absolute path to root directory or working, depending on if \p path is absolute or relative
      */
-    static void startTokenization(char needed_inode_path[PATH_NAME_SZ],
-                                  char **needed_inode_name,
-                                  char path_copy[PATH_NAME_SZ],
-                                  char *path,
-                                  const char *root_path);
+    static void openStartingDirectory(char starting_dir[FILENAME_SZ + 1],
+                                      char *path,
+                                      const char *root_path);
 };
-
 
 

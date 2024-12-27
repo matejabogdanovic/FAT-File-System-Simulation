@@ -1,25 +1,53 @@
 #include "../h/Console.h"
 #include <iostream>
+#include <cstring>
 
 // todo optimize with map?
 int Console::open() {
 
-    std::string command;
+
     while(true) {
         std::cout << FileSystem::get().getWorkingDirectoryName() << ">";
 
-        std::getline(std::cin, command);
-        if(command == "exit")
-            break;
-        else if(command == "cd ..") {
-            FileSystem::get().setWDtoParent();
-        } else if(command == "ls") {
-            FileSystem::get().listWDFiles();
-        } else if(command == "tree -root") {
+        char cmd[PATHNAME_SZ + 10];
+        std::cin.getline(cmd, PATHNAME_SZ + 10);
+        char *command = strtok(cmd, " ");
+        if(!command) {
             FileSystem::get().printTree();
-        } else if(command == "tree") {
+            continue;
+        }
+        char *args = strtok(NULL, " ");
+        if(strtok(NULL, " ")) {
+            std::cout << "INVALID COMMAND\n";
+            continue;
+        }
+        std::cout << "command " << command;
+        std::cout << " args " << (args ? args : "no") << std::endl;
+        if(!strcmp(command, "exit"))
+            break;
+        else if(!strcmp(command, "reset")) {
+            // FileSystem::reset();
+        } else if(args && !strcmp(command, "open")) {
+            int ret = FileSystem::get().open(args, FILE_EXT::DIR, 1);
+            FileSystem::get().printTree();
+            if(ret < 0)std::cout << "Error: " << std::dec << ret << std::endl;
+        } else if(args && !strcmp(command, "cd")) {
+            if(!strcmp(args, ".."))
+                FileSystem::get().setWDtoParent();
+            else if(!strcmp(args, ".")) {
+                continue;
+            } else {
+                int ret = FileSystem::get().setWDto(args);
+                if(ret == -10)std::cout << "Invalid directory name." << std::endl;
+                else if(ret < 0)std::cout << "Error: " << std::dec << ret << std::endl;
+            }
+        } else if(!strcmp(command, "ls")) {
+            FileSystem::get().listWDFiles();
+        } else if(args && !strcmp(command, "tree") && !strcmp(args, "-root")) {
+            FileSystem::get().printTree();
+        } else if(!strcmp(command, "tree")) {
             //FileSystem::get().printTree(true);
-        } else if(command == "help pls") {
+        } else if(args && !strcmp(command, "help") && !strcmp(args, "pls")) {
             printHelp();
         } else {
             std::cout << "Unknown command. Please, type 'help pls' for help.\n";

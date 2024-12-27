@@ -18,9 +18,9 @@ head = head->bro;
 #define checkPathName(path)\
 if(!strcmp(path, "/"))return ERROR_INVALID_PATH_NAME;\
 auto path_len = strlen(path);\
-if(path[0] != '/' && strlen(FileSystem::get().getWorkingDirectoryName()) + path_len > PATH_NAME_SZ - 1)\
+if(path[0] != '/' && strlen(FileSystem::get().getWorkingDirectoryName()) + path_len > FILENAME_SZ)\
 return ERROR_INVALID_PATH_NAME;\
-if(path_len > PATH_NAME_SZ - 1 || path[path_len - 1] == '/')return ERROR_INVALID_PATH_NAME; // no name
+if(path_len > FILENAME_SZ || path[path_len - 1] == '/')return ERROR_INVALID_PATH_NAME; // no name
 
 Inode::Inode(FileControlBlock::FCB *fcb, Inode *child, Inode *bro, Inode *parent)
         : fcb(fcb), child(child), bro(bro), parent(parent) {
@@ -42,33 +42,26 @@ Inode *Inode::makeNode(FileControlBlock::fcb_t fcb) {
     return node;
 }
 
-void Inode::startTokenization(char needed_inode_path[PATH_NAME_SZ],
-                              char **needed_inode_name,
-                              char path_copy[PATH_NAME_SZ],
-                              char *path, const char *root_path) {
-    char full_path[PATH_NAME_SZ] = {0}; // full path even if working directory isn't really root
+void Inode::openStartingDirectory(char starting_dir[FILENAME_SZ + 1],
+                                  char *path, const char *root_path) {
+    char full_path[FILENAME_SZ + 1] = {0}; // full path even if working directory isn't really root
 
-    strcpy(path_copy, path); // copy path, can be relative or full path
+
     if(path[0] != '/') {
         // isn't full path so, find full path by concatenating working directory with path
         strcpy(full_path, root_path);
         if(strcmp(root_path, "/") != 0)  // if working isn't root => working + /
             strcat(full_path, "/");
 
-        strcpy(needed_inode_path, full_path); // needed_node = working/
+        strcpy(starting_dir, full_path); // needed_node = working/
         strcat(full_path, path); // path_name is working/ + relative path
 
 
         strcpy(path, full_path); // write full path name
     } else {
         //strcpy(full_path, path);
-        strcpy(needed_inode_path, root_path); // needed_node = /
+        strcpy(starting_dir, root_path); // needed_node = /
     }
-
-
-    *needed_inode_name = strtok(path_copy, "/");
-
-    strcat(needed_inode_path, *needed_inode_name); // it's /+name = /name (working_dir/+name = working_dir/name )
 }
 
 Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
@@ -79,11 +72,16 @@ Inode::Status Inode::searchTree(Inode *start, char *path, FILE_EXT extension,
 
     checkPathName(path)
 
-    char needed_inode_path[PATH_NAME_SZ] = {0};
-    char path_copy[PATH_NAME_SZ] = {0};
+    char needed_inode_path[FILENAME_SZ + 1] = {0};
+    char path_copy[FILENAME_SZ + 1] = {0};
     char *needed_inode_name = nullptr;
+    strcpy(path_copy, path); // copy path, can be relative or full path
+    needed_inode_name = strtok(path_copy, "/");
 
-    Inode::startTokenization(needed_inode_path, &needed_inode_name, path_copy, path, start->fcb->path);
+    Inode::openStartingDirectory(needed_inode_path, path, start->fcb->path);
+
+
+    strcat(needed_inode_path, needed_inode_name); // it's /+name = /name (working_dir/+name = working_dir/name )
 
     Inode *head = start->child, *prev = start, *log_p = start;
     Status link_status = LINK_WITH_PARENT;
@@ -154,7 +152,8 @@ void Inode::printTree(const Inode *node, unsigned parent_name_size, int level) {
     }
 
 
-    std::cout << (node->fcb->path + parent_name_size);
+    std::cout << (node->fcb->path //+ parent_name_size
+    );
     if(node->fcb->ext != DIR) std::cout << "." << file_ext_str[node->fcb->ext];
 
     std::cout << "\n";
@@ -170,5 +169,4 @@ void Inode::printTree(const Inode *node, unsigned parent_name_size, int level) {
         printTree(node->bro, parent_name_size, level);
     }
 }
-
 

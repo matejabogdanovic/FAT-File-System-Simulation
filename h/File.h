@@ -4,7 +4,7 @@
 class File {
 public:
 
-    File(pathname_t path, FILE_EXT extension, size_t size);
+    File(const char *path, FILE_EXT extension, size_t size);
 
     // copy
     //File(const File&);
@@ -16,7 +16,7 @@ public:
 
 private:
 
-    int open(pathname_t path, FILE_EXT extension, size_t size);
+    int open(const char *path, FILE_EXT extension, size_t size);
 
     int close();
 

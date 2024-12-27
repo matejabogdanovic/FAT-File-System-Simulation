@@ -15,7 +15,8 @@ public:
      */
     static void clearRoot(); // temporary public
 
-    int remove(pathname_t path, FILE_EXT ext);
+
+    int remove(const char *path, FILE_EXT ext);
 
     /**
      * @brief Prints file system tree starting from root directory.
@@ -30,6 +31,8 @@ public:
 
     const char *setWDtoParent();
 
+    int setWDto(char *path);
+
     void listWDFiles() const;
 
     ~FileSystem();
@@ -37,7 +40,15 @@ public:
 private:
     friend class File;
 
+    friend class Console;
+
     FileSystem();
+
+    int getFileName(const char *path, int path_len, char *file_name);
+
+    Inode::Status searchTree(const char *path, FILE_EXT extension,
+                             Inode::Status *is_prev_parent, Inode **previous, Inode **logical_parent,
+                             Inode **node, char *filename);
 
     /**
      * @brief
@@ -46,7 +57,7 @@ private:
      * @param size
      * @return
      */
-    FHANDLE open(pathname_t path, FILE_EXT extension, size_t size);
+    FHANDLE open(const char *path, FILE_EXT extension, size_t size);
 
     /**
      * @brief Saves cached FAT structures to disk and releases OFT entry taken by \p file.

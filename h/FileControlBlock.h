@@ -6,7 +6,7 @@ class FileControlBlock {
 public:
     struct FCB { // 32 chars => 8 FCBs in ONE block
 
-        char path[PATH_NAME_SZ] = {0};
+        char path[FILENAME_SZ + 1] = {0};
         FILE_EXT ext;
         block_cnt_t data_size;
         adisk_t data_block;
@@ -20,7 +20,7 @@ public:
         // char_t padding[11] = {0};
 
 
-        explicit FCB(const char path[PATH_NAME_SZ],
+        explicit FCB(const char path[FILENAME_SZ + 1],
                      FILE_EXT extension,
                      block_cnt_t data_size,
                      adisk_t data_block,
@@ -55,7 +55,7 @@ private:
      * @return <0 if error
     */
     static int populateFCB(fcb_t buf,
-                           const char path[PATH_NAME_SZ],
+                           const char path[FILENAME_SZ + 1],
                            FILE_EXT extension,
                            block_cnt_t data_size,
                            adisk_t data_block,
