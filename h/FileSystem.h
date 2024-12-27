@@ -67,6 +67,11 @@ private:
     int close(FHANDLE file);
 
     /**
+
+     */
+    int close(const char *path, FILE_EXT extension);
+
+    /**
      * @brief Allocates directory tree starting from the root directory.
      * @return <0 if error
      */

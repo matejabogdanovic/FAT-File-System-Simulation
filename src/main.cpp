@@ -46,14 +46,14 @@ void printBlocks() {
 
 //TODO: ne koristiti fcb_t vec samo FCB a kad treba upis na disk, tek onda raditi konverziju
 int main() {
-    //reset();
+    reset();
     std::cout << "File system init.\n";
 
     //
     File *f, *f1, *f2;
     try {
-        //   f = new File("./dir2/../dir3", FILE_EXT::DIR, 1);
-        // f1 = new File("/Ime/I", FILE_EXT::DIR, 1);
+        f = new File("./f", FILE_EXT::DIR, 1);
+        f1 = new File("/f/f2", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
         std::cerr << "Error: " << std::dec << error;
@@ -62,8 +62,8 @@ int main() {
     }
 
     //std::cout << std::dec << "FILE HANDLE: " << f;
-    //delete f;
-    //delete f1;
+    delete f;
+    delete f1;
     Console::open();
     FileSystem::get().printTree();
     // std::cout << "Removing:\n" << FileSystem::get().remove("dir/f", FILE_EXT::MB) << std::endl;

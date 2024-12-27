@@ -68,11 +68,30 @@ int OpenFilesTable::takeEntry() {
 }
 
 void OpenFilesTable::releaseEntry(FHANDLE fhandle) {
+    if(fhandle < 0)return;
+    auto i = fhandle / 64;
+    auto j = fhandle % 64;
+    table[fhandle][0] = 0xffff;
+    table[fhandle][1] = 0xffff; // cursor
+    free_vector[i] &= ~(uint64_t) (1 << j);
+}
+
+bool OpenFilesTable::isTaken(FHANDLE fhandle) const {
+    if(fhandle < 0)return false;
     auto i = fhandle / 64;
     auto j = fhandle % 64;
 
-    free_vector[i] &= ~(uint64_t) (1 << j);
+
+    return free_vector[i] & ((uint64_t) (1 << j));
 }
+
+adisk_t OpenFilesTable::getDataBlock(FHANDLE fhandle) const {
+    if(!isTaken(fhandle))return 0;
+
+    return table[fhandle][0] >> OFFS_SHIFT;
+}
+
+
 
 
 

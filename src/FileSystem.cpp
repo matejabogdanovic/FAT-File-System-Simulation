@@ -5,6 +5,7 @@
 
 
 FileSystem::~FileSystem() { // TODO: Deallocate structures
+    FAT::saveToDisk();
     delete root;
 }
 
@@ -78,7 +79,7 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
         *node = root;
         *previous = nullptr;
         *logical_parent = nullptr;
-        *is_prev_parent = Inode::Status::EXCEPTION_CAN_T_OPEN;
+        *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
         return *is_prev_parent;
     }
     bool is_relative_path = (path[0] != '/');
@@ -179,6 +180,7 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     char file_name[FILENAME_SZ + 1] = {0};
     Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
                                                file_name);
+    if(node == root)return -9;// can't open root
     if(ret < 0)
         return ret;
 
@@ -201,6 +203,12 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     if(ret == Inode::FILE_EXISTS) {
         std::cout << "no one======\n";
         std::cout << "ALREADY EXISTS.\n";
+        auto blk = oft.getDataBlock(node->handle);
+        if(blk && blk == node->fcb->data_block) {
+            std::cout << "ALREADY OPENED: " << node->handle << std::endl;
+            return node->handle;
+        }
+
         fcb = node->fcb;
     } else {
         std::cout << (is_prev_parent ? "parent======\n" : "brother======\n");
@@ -221,8 +229,15 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
 
 
     // usually we would need FCB address to write in OFT but since it's write back, we will directly write in data block
-    return oft.set(fcb->data_block,
-                   0); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
+
+
+    FHANDLE handle = oft.set(fcb->data_block,
+                             0); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
+    if(handle >= 0) {
+        node->handle = handle;
+    }
+
+    return handle;
 }
 
 int FileSystem::close(FHANDLE file) {
@@ -324,7 +339,7 @@ int FileSystem::setWDto(char *path) {
     char file_name[FILENAME_SZ + 1] = {0};
     Inode::Status ret = FileSystem::searchTree(path, DIR, &is_prev_parent, &prev, &logical_parent, &node,
                                                file_name);
-    if(ret < 0 && ret != Inode::Status::EXCEPTION_CAN_T_OPEN) {
+    if(ret < 0) {
         return ret;
     }
 
@@ -332,6 +347,27 @@ int FileSystem::setWDto(char *path) {
 
     setWorkingDirectory(node);
     return 0;
+}
+
+int FileSystem::close(const char *pathname, FILE_EXT extension) {
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    // if it's full path, start from root, else from working dir
+
+    char file_name[FILENAME_SZ + 1] = {0};
+    Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
+                                               file_name);
+    if(ret != Inode::FILE_EXISTS || node == root)
+        return -1;
+
+    auto blk = oft.getDataBlock(node->handle);
+    if(blk && blk == node->fcb->data_block) {
+        std::cout << "CLOSING: " << node->handle << std::endl;
+        close(node->handle);
+        node->handle = -1;
+        return 0;
+    }
+    return -2;
 }
 
 

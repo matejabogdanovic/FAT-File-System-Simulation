@@ -6,6 +6,7 @@ struct Inode {
 
     FileControlBlock::FCB *fcb;
     Inode *child, *bro, *parent;
+    FHANDLE handle = -1;
 
     explicit Inode(FileControlBlock::FCB *fcb, Inode *child = nullptr, Inode *bro = nullptr, Inode *parent = nullptr);
 
@@ -20,7 +21,7 @@ struct Inode {
         ERROR_INVALID_ARGS = -1,
         ERROR_INVALID_FCB = -2,
         ERROR_INVALID_PATH_NAME = -3,
-        EXCEPTION_CAN_T_OPEN = -4,
+        // EXCEPTION_CAN_T_OPEN = -4,
         LINK_WITH_BROTHER = 0,
         LINK_WITH_PARENT = 1,
         FILE_EXISTS = 2

@@ -4,6 +4,8 @@
 class OpenFilesTable {
     friend class FileSystem;
 
+    friend class Console;
+
     OpenFilesTable();
 
     /**
@@ -37,6 +39,15 @@ class OpenFilesTable {
      * @param fhandle
      */
     void releaseEntry(FHANDLE fhandle);
+
+    bool isTaken(FHANDLE fhandle) const;
+
+    /**
+     * @brief
+     * @param fhandle
+     * @return 0 if error
+     */
+    adisk_t getDataBlock(FHANDLE fhandle) const;
 
     oft_t table{ };
     uint64_t free_vector[FREE_V_SZ] = {0};
