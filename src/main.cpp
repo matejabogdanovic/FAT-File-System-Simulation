@@ -52,8 +52,8 @@ int main() {
     //
     File *f, *f1, *f2;
     try {
-        f = new File("./f", FILE_EXT::DIR, 1);
-        f1 = new File("/f/f2", FILE_EXT::DIR, 1);
+        //f = new File("./f", FILE_EXT::DIR, 1);
+        // f1 = new File("/f/f2", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
         std::cerr << "Error: " << std::dec << error;
@@ -62,8 +62,8 @@ int main() {
     }
 
     //std::cout << std::dec << "FILE HANDLE: " << f;
-    delete f;
-    delete f1;
+    // delete f;
+    // delete f1;
     Console::open();
     FileSystem::get().printTree();
     // std::cout << "Removing:\n" << FileSystem::get().remove("dir/f", FILE_EXT::MB) << std::endl;

@@ -44,18 +44,22 @@ Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent) {
     return node;
 }
 
-int FileSystem::getFileName(const char *path, int path_len, char *file_name) {
-
-    if(path[path_len - 1] == '/')return -1; // todo it will skip root directiory!
-    const char *p = path + path_len - 1;
+int FileSystem::getFileName(char *path, size_t *path_len, char *file_name, FILE_EXT extension) {
+    if(path[(*path_len) - 1] == '/') { // if last character is / then it must be ..../dir/
+        if(extension != DIR)return -1; // error if ..../file/ - can't treat file like directory
+        path[--(*path_len)] = 0; // ..../dir/ => ..../dir
+        if(path[*path_len - 1] == '/')return -1; // if ....// error because no directory name!
+    }
+    // now find file name going from back of the path to first /
+    const char *p = path + (*path_len) - 1;
     while(*p != '/' && p != path) {
         p--;
     }
-    if(*p == '/')p++;
-    // name can't be relative path
-    auto file_name_len = path_len - (p - path);
+    if(*p == '/')p++; // position p at the beginning of name
+
+    auto file_name_len = (*path_len) - (p - path);
+    // invalid file name length
     if(file_name_len > FILENAME_SZ)return -2;
-    // if(!strcmp(p, "..") || !strcmp(p, "."))return -3;
 
     strcpy(file_name, p);
     return 0;
@@ -71,96 +75,83 @@ struct NeededFile {
     }
 };
 
+#define moveRight(status, previous, node)\
+status = Inode::Status::LINK_WITH_BROTHER;\
+previous = node;\
+node = node->bro;
+
+#define moveDown(status, previous, node, logical_parent)\
+status = Inode::Status::LINK_WITH_PARENT;\
+previous = node;\
+logical_parent = previous;\
+node = node->child;
+
+#define moveUp(node, logical_parent)\
+node = node->parent;\
+logical_parent = node->parent;
+
 Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
-                                     Inode::Status *is_prev_parent, Inode **previous, Inode **logical_parent,
+                                     Inode::Status *status, Inode **previous, Inode **logical_parent,
                                      Inode **node, char *filename) {
-    if(!is_prev_parent || !previous || !node)return Inode::Status::ERROR_INVALID_ARGS;
+    //  ================ check args
+    if(!status || !previous || !node)return Inode::Status::ERROR_INVALID_ARGS;
+    // check if wanted directory is root
     if(!strcmp(path, "/")) {
         *node = root;
         *previous = nullptr;
         *logical_parent = nullptr;
-        *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
-        return *is_prev_parent;
+        *status = Inode::Status::LINK_WITH_PARENT;
+        return *status;
     }
-    bool is_relative_path = (path[0] != '/');
+    size_t path_len = strlen(path);
+    // invalid path name length
+    if(path_len > PATHNAME_SZ) return Inode::Status::ERROR_INVALID_PATH_NAME;
+
+    //  ================  get file name - TODO check path name for ex ////..// invalid - is it a feature :)
     char path_copy[PATHNAME_SZ + 1] = {0};
     strcpy(path_copy, path);
-// todo check path name for ex //..// invalid
-    auto path_len = strlen(path_copy);
-    if(path_copy[path_len - 1] == '/') {
-        if(extension != DIR)return Inode::ERROR_INVALID_PATH_NAME;
-        path_copy[--path_len] = 0;
-        if(path_copy[path_len - 1] == '/')return Inode::ERROR_INVALID_PATH_NAME;
-    }
-    if(path_len > PATHNAME_SZ)return Inode::Status::ERROR_INVALID_PATH_NAME;
+    if(getFileName(path_copy, &path_len, filename, extension) < 0)
+        return Inode::Status::ERROR_INVALID_PATH_NAME; // invalid name
 
-
-    if(getFileName(path_copy, path_len, filename) < 0) {
-
-        return Inode::Status::ERROR_INVALID_PATH_NAME;
-    }
-    //std::cout << "File_name is " << filename << std::endl;
-
-    // start tokenization
-
-
+    // ================ start search
+    bool is_relative_path = (path[0] != '/');
     *node = (!is_relative_path ? root : getWorkingDirectory());
-    *logical_parent = *previous = (!is_relative_path ? root->parent : getWorkingDirectory()->parent);
-    *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
+    *logical_parent = *previous = (*node)->parent;
+    *status = Inode::Status::LINK_WITH_PARENT;
     int i = 0;
     while(true) {
         NeededFile needed_file = {strtok((i++) ? NULL : path_copy, "/")};
         bool is_needed_file_last = (needed_file.name + needed_file.len == path_len + path_copy);
-        if(!strcmp(needed_file.name, ".")) {
-            // -||-
-            if(is_needed_file_last) {
+        // ===================================================== SWITCH by NAME
+        if(!strcmp(needed_file.name, ".")) { // =============== CASE .
+            if(is_needed_file_last)
                 return Inode::Status::FILE_EXISTS;
+        } else if(!strcmp(needed_file.name, "..")) { // ======= CASE ..
+            if((*node)->parent) { // if parent exists
+                moveUp((*node), (*logical_parent))
+                // *previous = *is_prev_parent = nullptr; // values don't matter
             }
-        } else if(!strcmp(needed_file.name, "..")) {
-            if((*node)->parent) {
-                *node = (*node)->parent;
-                *logical_parent = (*node)->parent;
-                //*previous = nullptr;
-                //*is_prev_parent = nullptr;
-            }
-            if(is_needed_file_last) {
+            if(is_needed_file_last)
                 return Inode::Status::FILE_EXISTS;
-            }
-        } else {
-            // move down
-            *is_prev_parent = Inode::Status::LINK_WITH_PARENT;
-            *previous = *node;
-            *logical_parent = *previous;
-            *node = (*node)->child;
+        } else { // =========================================== CASE dir or file
+            moveDown((*status), (*previous), (*node), (*logical_parent))
+            // moving through brothers until a match is found or not
             while(true) {
-                if(!(*node)) { // is null
-                    if(is_needed_file_last) {
-                        return *is_prev_parent;
-                    } else {
-                        return Inode::Status::ERROR_INVALID_PATH_NAME;
+                if(!(*node))  // is null
+                    return is_needed_file_last ? (*status) : Inode::Status::ERROR_INVALID_PATH_NAME;
+                // is not null
+                if(is_needed_file_last) {
+                    if((*node)->fcb->ext == extension &&
+                       !strcmp((*node)->fcb->path, needed_file.name)) {
+                        return Inode::Status::FILE_EXISTS; // a match is found
                     }
-                } else { // is not null
-                    if(is_needed_file_last) {
-                        if((*node)->fcb->ext == extension &&
-                           !strcmp((*node)->fcb->path, needed_file.name)) {
-                            return Inode::Status::FILE_EXISTS;
-                        } else {
-                            // move right
-                            *is_prev_parent = Inode::Status::LINK_WITH_BROTHER;
-                            *previous = *node;
-                            *node = (*node)->bro;
-                        }
-                    } else {
-                        if((*node)->fcb->ext == DIR &&
-                           !strcmp((*node)->fcb->path, needed_file.name)) {
-                            break; // found <3
-                        } else {
-                            // move right
-                            *is_prev_parent = Inode::Status::LINK_WITH_BROTHER;
-                            *previous = *node;
-                            *node = (*node)->bro;
-                        }
+                    moveRight((*status), (*previous), (*node))
+                } else {
+                    if((*node)->fcb->ext == DIR &&
+                       !strcmp((*node)->fcb->path, needed_file.name)) {
+                        break; // a match is found <3
                     }
+                    moveRight((*status), (*previous), (*node))
                 }
             }
         }
@@ -178,7 +169,9 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
+    Inode::Status ret = FileSystem::searchTree(pathname, extension,
+                                               &is_prev_parent,
+                                               &prev, &logical_parent, &node,
                                                file_name);
     if(node == root)return -9;// can't open root
     if(ret < 0)
@@ -255,6 +248,51 @@ int FileSystem::close(FHANDLE file) {
     return 0;
 }
 
+int FileSystem::close(const char *pathname, FILE_EXT extension) {
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    // if it's full path, start from root, else from working dir
+
+    char file_name[FILENAME_SZ + 1] = {0};
+    Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
+                                               file_name);
+    if(ret != Inode::FILE_EXISTS || node == root)
+        return -1;
+
+    auto blk = oft.getDataBlock(node->handle);
+    if(blk && blk == node->fcb->data_block) {
+        std::cout << "CLOSING: " << node->handle << std::endl;
+        close(node->handle);
+        node->handle = -1;
+        return 0;
+    }
+    return -2;
+}
+
+int FileSystem::remove(const char *path, FILE_EXT ext) { // todo finish
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    char file_name[FILENAME_SZ + 1] = {0};
+    Inode::Status ret = FileSystem::searchTree(path, ext,
+                                               &is_prev_parent,
+                                               &prev, &logical_parent, &node,
+                                               file_name);
+    if(node == root)return -8;
+    if(ret != Inode::FILE_EXISTS)return (ret < 0) ? ret : -1;
+
+    std::cout << "NEEDS REMOVING\n";
+    std::cout << "Node name: " << file_name << std::endl;
+    if(node)
+        std::cout << "Node: " << node->fcb->path << std::endl;
+    std::cout << "Previous node: " << (prev ? prev->fcb->path : "0") << std::endl;
+    std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
+    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->path : "0") << std::endl;
+    if(node && node->parent)
+        std::cout << "Written logical parent is: " << node->parent->fcb->path << std::endl;
+
+    return 0;
+}
+
 void FileSystem::clearRoot() {
     block_t block = {0};
     FileControlBlock::fcb_t fcb = {0};
@@ -296,27 +334,6 @@ block_cnt_t FileSystem::sizeToBlocks(size_t size) {
     return (size + BLOCK_SZ - 1) / BLOCK_SZ;
 }
 
-int FileSystem::remove(const char *pathname, FILE_EXT ext) { // todo optimize to search from working directory
-
-    // if it's full path, start from root, else from working
-    Inode *start = (pathname[0] == '/' ? root : getWorkingDirectory());
-    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
-    char path[FILENAME_SZ + 1] = {0};
-    strcpy(path, pathname);
-
-    Inode::Status ret = Inode::searchTree(start, path, ext, &is_prev_parent, &prev, &logical_parent, &node);
-    if(ret != Inode::FILE_EXISTS)return (ret < 0) ? ret : -1;
-    // todo
-    std::cout << "Need to remove: " << node->fcb->path << std::endl;
-    std::cout << "Previous node: " << (prev ? prev->fcb->path : "0") << std::endl;
-    std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
-    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->path : "0") << std::endl;
-    if(node && node->parent)
-        std::cout << "Written logical parent is: " << node->parent->fcb->path << std::endl;
-    return 0;
-}
-
 const char *FileSystem::setWDtoParent() {
     if(working->parent) {
         setWorkingDirectory(working->parent);
@@ -348,28 +365,6 @@ int FileSystem::setWDto(char *path) {
     setWorkingDirectory(node);
     return 0;
 }
-
-int FileSystem::close(const char *pathname, FILE_EXT extension) {
-    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
-    // if it's full path, start from root, else from working dir
-
-    char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
-                                               file_name);
-    if(ret != Inode::FILE_EXISTS || node == root)
-        return -1;
-
-    auto blk = oft.getDataBlock(node->handle);
-    if(blk && blk == node->fcb->data_block) {
-        std::cout << "CLOSING: " << node->handle << std::endl;
-        close(node->handle);
-        node->handle = -1;
-        return 0;
-    }
-    return -2;
-}
-
 
 
 

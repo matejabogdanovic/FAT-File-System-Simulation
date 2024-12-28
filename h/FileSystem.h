@@ -44,10 +44,10 @@ private:
 
     FileSystem();
 
-    int getFileName(const char *path, int path_len, char *file_name);
+    int getFileName(char *path, size_t *path_len, char *file_name, FILE_EXT extension);
 
     Inode::Status searchTree(const char *path, FILE_EXT extension,
-                             Inode::Status *is_prev_parent, Inode **previous, Inode **logical_parent,
+                             Inode::Status *status, Inode **previous, Inode **logical_parent,
                              Inode **node, char *filename);
 
     /**

@@ -29,6 +29,9 @@ int Console::open() {
             FileSystem::get().oft.printOFT(args ? atoi(args) : 255);
         } else if(!args && !strcmp(command, "reset")) {
             // FileSystem::reset();
+        } else if(args && !strcmp(command, "remove")) {
+            int ret = FileSystem::get().remove(args, FILE_EXT::DIR);
+            if(ret < 0)std::cout << "Error: " << std::dec << ret << std::endl;
         } else if(args && !strcmp(command, "open")) {
             int ret = FileSystem::get().open(args, FILE_EXT::DIR, 1);
             FileSystem::get().printTree();
@@ -37,15 +40,15 @@ int Console::open() {
             int ret = FileSystem::get().close(args, FILE_EXT::DIR);
             if(ret < 0)std::cout << "Error: " << std::dec << ret << std::endl;
         } else if(args && !strcmp(command, "cd")) {
-            if(!strcmp(args, ".."))
-                FileSystem::get().setWDtoParent();
-            else if(!strcmp(args, ".")) {
-                continue;
-            } else {
-                int ret = FileSystem::get().setWDto(args);
-                if(ret == -10)std::cout << "Invalid directory name." << std::endl;
-                else if(ret < 0)std::cout << "Error: " << std::dec << ret << std::endl;
-            }
+            //  if(!strcmp(args, ".."))
+            // FileSystem::get().setWDtoParent();
+            //  else if(!strcmp(args, ".")) {
+            //   continue;
+            // } else {
+            int ret = FileSystem::get().setWDto(args);
+            if(ret == -10)std::cout << "Invalid directory name." << std::endl;
+            else if(ret < 0)std::cout << "Error: " << std::dec << ret << std::endl;
+            //}
         } else if(!args && !strcmp(command, "ls")) {
             FileSystem::get().listWDFiles();
         } else if(args && !strcmp(command, "tree") && !strcmp(args, "-root")) {
