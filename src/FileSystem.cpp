@@ -4,9 +4,9 @@
 #include <cstring>
 
 
-FileSystem::~FileSystem() { // TODO: Deallocate structures
-    FAT::saveToDisk();
-    delete root;
+FileSystem &FileSystem::get() {
+    static FileSystem dir;
+    return dir;
 }
 
 int FileSystem::init() {
@@ -20,8 +20,19 @@ int FileSystem::init() {
 
     //root->printInode();
     //setWorkingDirectory(root->child->bro->child); // TODO REMOVE
-    initialized = true;
+    //initialized = true;
     return 0;
+}
+
+FileSystem::FileSystem() {
+    FAT::init();
+
+    if(FileSystem::init() < 0)throw -1;
+}
+
+FileSystem::~FileSystem() { // TODO: Deallocate structures
+    FAT::saveToDisk();
+    delete root;
 }
 
 // todo should be done with block + offset
@@ -44,7 +55,7 @@ Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent) {
     return node;
 }
 
-int FileSystem::getFileName(char *path, size_t *path_len, char *file_name, FILE_EXT extension) {
+int FileSystem::getFileName(char *path, FILE_EXT extension, size_t *path_len, char *file_name) {
     if(path[(*path_len) - 1] == '/') { // if last character is / then it must be ..../dir/
         if(extension != DIR)return -1; // error if ..../file/ - can't treat file like directory
         path[--(*path_len)] = 0; // ..../dir/ => ..../dir
@@ -110,7 +121,7 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
     //  ================  get file name - TODO check path name for ex ////..// invalid - is it a feature :)
     char path_copy[PATHNAME_SZ + 1] = {0};
     strcpy(path_copy, path);
-    if(getFileName(path_copy, &path_len, filename, extension) < 0)
+    if(getFileName(path_copy, extension, &path_len, filename) < 0)
         return Inode::Status::ERROR_INVALID_PATH_NAME; // invalid name
 
     // ================ start search
@@ -269,11 +280,11 @@ int FileSystem::close(const char *pathname, FILE_EXT extension) {
     return -2;
 }
 
-int FileSystem::remove(const char *path, FILE_EXT ext) { // todo finish
+int FileSystem::remove(const char *path, FILE_EXT extension) { // todo finish
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, ext,
+    Inode::Status ret = FileSystem::searchTree(path, extension,
                                                &is_prev_parent,
                                                &prev, &logical_parent, &node,
                                                file_name);
@@ -301,54 +312,20 @@ void FileSystem::clearRoot() {
     HDisk::get().writeBlock(block, ROOT_BLK);
 }
 
-void FileSystem::printTree() const {
-    Inode::printTree(root);
-}
-
-FileSystem &FileSystem::get() {
-    static FileSystem dir;
-    return dir;
-}
-
-FileSystem::FileSystem() {
-    FAT::init();
-
-    if(FileSystem::init() < 0)throw -1;
-}
-
-Inode *FileSystem::getWorkingDirectory() const {
-    return working;
-}
-
 int FileSystem::setWorkingDirectory(Inode *dir) {
     if(!working) return -1;
     working = dir;
     return 0;
 }
 
-const char *FileSystem::getWorkingDirectoryName() {
-    return working->fcb->path;
-}
-
-block_cnt_t FileSystem::sizeToBlocks(size_t size) {
-    return (size + BLOCK_SZ - 1) / BLOCK_SZ;
-}
-
-const char *FileSystem::setWDtoParent() {
+const char *FileSystem::setWorkingDirectoryToParent() {
     if(working->parent) {
         setWorkingDirectory(working->parent);
     }
     return getWorkingDirectoryName();
 }
 
-void FileSystem::listWDFiles() const {
-    for(Inode *next = working->child; next; next = next->bro) {
-        next->printInode();
-        std::cout << std::endl;
-    }
-}
-
-int FileSystem::setWDto(char *path) {
+int FileSystem::setWorkingDirectory(char *path) {
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
     // if it's full path, start from root, else from working dir
@@ -366,7 +343,28 @@ int FileSystem::setWDto(char *path) {
     return 0;
 }
 
+void FileSystem::printTree() const {
+    Inode::printTree(root);
+}
 
+Inode *FileSystem::getWorkingDirectory() const {
+    return working;
+}
+
+const char *FileSystem::getWorkingDirectoryName() const {
+    return working->fcb->path;
+}
+
+void FileSystem::listWorkingDirectory() const {
+    for(Inode *next = working->child; next; next = next->bro) {
+        next->printInode();
+        std::cout << std::endl;
+    }
+}
+
+block_cnt_t FileSystem::sizeToBlocks(size_t size) {
+    return (size + BLOCK_SZ - 1) / BLOCK_SZ;
+}
 
 
 

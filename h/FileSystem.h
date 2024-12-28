@@ -16,7 +16,7 @@ public:
     static void clearRoot(); // temporary public
 
 
-    int remove(const char *path, FILE_EXT ext);
+    int remove(const char *path, FILE_EXT extension);
 
     /**
      * @brief Prints file system tree starting from root directory.
@@ -27,13 +27,13 @@ public:
      * @brief
      * @return current working directory name
      */
-    const char *getWorkingDirectoryName();
+    [[nodiscard]] inline const char *getWorkingDirectoryName() const;
 
-    const char *setWDtoParent();
+    const char *setWorkingDirectoryToParent();
 
-    int setWDto(char *path);
+    int setWorkingDirectory(char *path);
 
-    void listWDFiles() const;
+    void listWorkingDirectory() const;
 
     ~FileSystem();
 
@@ -44,7 +44,15 @@ private:
 
     FileSystem();
 
-    int getFileName(char *path, size_t *path_len, char *file_name, FILE_EXT extension);
+    /**
+     * @brief Helper function for finding file name from path.
+     * @param path
+     * @param extension
+     * @param path_len return value
+     * @param file_name return value
+     * @return
+     */
+    int getFileName(char *path, FILE_EXT extension, size_t *path_len, char *file_name);
 
     Inode::Status searchTree(const char *path, FILE_EXT extension,
                              Inode::Status *status, Inode **previous, Inode **logical_parent,
@@ -79,7 +87,7 @@ private:
 
     static Inode *loadTree(adisk_t blk, Inode *logical_parent = nullptr);
 
-    inline Inode *getWorkingDirectory() const;
+    [[nodiscard]] inline Inode *getWorkingDirectory() const;
 
     int setWorkingDirectory(Inode *working);
 
@@ -87,7 +95,6 @@ private:
 
     Inode *root = nullptr;
     Inode *working = nullptr;
-    bool initialized = false;
     OpenFilesTable oft;
 };
 
