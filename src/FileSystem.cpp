@@ -16,10 +16,10 @@ int FileSystem::init() {
     if(!root)return -1;
     Inode::printTree(root);
     std::cout << "\n======Loading Tree FINISHED======\n";
-    working = root;
+    setWorkingDirectory(root);
 
     //root->printInode();
-    //setWorkingDirectory(root->child->bro->child); // TODO REMOVE
+    //setWorkingDirectory(root->child->bro->child);
     //initialized = true;
     return 0;
 }
@@ -30,13 +30,29 @@ FileSystem::FileSystem() {
     if(FileSystem::init() < 0)throw -1;
 }
 
-FileSystem::~FileSystem() { // TODO: Deallocate structures
+void FileSystem::deallocateTree(Inode *start) {
+    if(!start)return;
+
+    if(start->bro)
+        deallocateTree(start->bro);
+
+    if(start->child)
+        deallocateTree(start->child);
+
+    start->printInode();
+    std::cout << std::endl;
+
+    delete start;
+}
+
+FileSystem::~FileSystem() {
     FAT::saveToDisk();
-    delete root;
+    std::cout << "\n~~~~~~~~~Deallocating Tree~~~~~~~~~\n";
+    deallocateTree(root);
 }
 
 // todo should be done with block + offset
-Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent) {
+Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent, Inode *previous) {
     block_t fcb = {0};
     HDisk::get().readBlock(fcb, block);
     //FileControlBlock::printFCBt(fcb);
@@ -45,12 +61,15 @@ Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent) {
     if(logical_parent) {
         node->parent = logical_parent;
     }
+    if(previous) {
+        node->previous = previous;
+    }
 
     if(node->fcb->bro)
-        node->bro = loadTree(node->fcb->bro, logical_parent);
+        node->bro = loadTree(node->fcb->bro, logical_parent, node);
 
     if(node->fcb->child)
-        node->child = loadTree(node->fcb->child, node);
+        node->child = loadTree(node->fcb->child, node, node);
 
     return node;
 }
@@ -101,6 +120,7 @@ node = node->child;
 node = node->parent;\
 logical_parent = node->parent;
 
+// if FILE EXISTS, previous, status and logical parent might not be consistent
 Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
                                      Inode::Status *status, Inode **previous, Inode **logical_parent,
                                      Inode **node, char *filename) {
@@ -187,13 +207,14 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     if(node == root)return -9;// can't open root
     if(ret < 0)
         return ret;
-
+    if(!strcmp(file_name, ".") || !strcmp(file_name, ".."))return -8;
 
     printTree();
     std::cout << "Node name: " << file_name << std::endl;
     if(node)
         std::cout << "Node: " << node->fcb->path << std::endl;
     std::cout << "Previous node: " << (prev ? prev->fcb->path : "0") << std::endl;
+    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->path : "0") << std::endl;
     std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
     std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->path : "0") << std::endl;
     if(node && node->parent)
@@ -296,6 +317,7 @@ int FileSystem::remove(const char *path, FILE_EXT extension) { // todo finish
     if(node)
         std::cout << "Node: " << node->fcb->path << std::endl;
     std::cout << "Previous node: " << (prev ? prev->fcb->path : "0") << std::endl;
+    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->path : "0") << std::endl;
     std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
     std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->path : "0") << std::endl;
     if(node && node->parent)
@@ -313,16 +335,14 @@ void FileSystem::clearRoot() {
 }
 
 int FileSystem::setWorkingDirectory(Inode *dir) {
-    if(!working) return -1;
+    if(!dir || dir->fcb->ext != DIR) return -1;
     working = dir;
+    working_path[0] = '\0';
+    if(working == root)
+        strcpy(working_path, "/");
+    else
+        getWorkingDirectoryPathRecursive(working, working_path);
     return 0;
-}
-
-const char *FileSystem::setWorkingDirectoryToParent() {
-    if(working->parent) {
-        setWorkingDirectory(working->parent);
-    }
-    return getWorkingDirectoryName();
 }
 
 int FileSystem::setWorkingDirectory(char *path) {
@@ -355,6 +375,21 @@ const char *FileSystem::getWorkingDirectoryName() const {
     return working->fcb->path;
 }
 
+void FileSystem::getWorkingDirectoryPathRecursive(Inode *node, char *path) const {
+    if(node->parent)
+        getWorkingDirectoryPathRecursive(node->parent, path);
+    if(node != root) {
+
+        strcat(path, "/");
+        strcat(path, node->fcb->path);
+    }
+}
+
+const char *FileSystem::getWorkingDirectoryPath() const {
+
+    return working_path;
+}
+
 void FileSystem::listWorkingDirectory() const {
     for(Inode *next = working->child; next; next = next->bro) {
         next->printInode();
@@ -365,6 +400,7 @@ void FileSystem::listWorkingDirectory() const {
 block_cnt_t FileSystem::sizeToBlocks(size_t size) {
     return (size + BLOCK_SZ - 1) / BLOCK_SZ;
 }
+
 
 
 

@@ -16,14 +16,15 @@ const std::map<std::string, Console::FunctionPointer> Console::map = std::map<st
         {"oft",    Console::cmdOft},
 };
 
-// todo optimize with map?
 int Console::open() {
 
     int ret = 0;
     char cmd[PATHNAME_SZ + 10];
     char *command = nullptr;
+
     while(true) {
-        std::cout << FileSystem::get().getWorkingDirectoryName() << ">";
+
+        std::cout << FileSystem::get().getWorkingDirectoryPath() << ">";
         std::cin.getline(cmd, PATHNAME_SZ + 10);
 
         command = strtok(cmd, " ");
