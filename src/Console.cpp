@@ -14,6 +14,7 @@ const std::map<std::string, Console::FunctionPointer> Console::map = std::map<st
 
 
         {"oft",    Console::cmdOft},
+        {"fat",    Console::cmdFat},
 };
 
 int Console::open() {
@@ -73,7 +74,8 @@ int Console::cmdHelp(char *args) {
               << "'open $path$' - open file/directory; $path$ can be relative or absolute\n"
               << "'close $path$' - close file/directory; $path$ can be relative or absolute\n"
               << "'remove $path$' - quit console; $path$ can be relative or absolute\n"
-              << "'oft [number_of_lines]' - list oft\n"
+              << "'oft [last_entry_to_print]' - list oft\n"
+              << "'fat [last_entry_to_print]' - list fat\n"
               << "=================================================================\n";
     return 0;
 }
@@ -128,6 +130,11 @@ int Console::cmdRemove(char *args) {
 
 int Console::cmdOft(char *args) {
     FileSystem::get().oft.printOFT(args ? atoi(args) : 255);
+    return 0;
+}
+
+int Console::cmdFat(char *args) {
+    FAT::printFAT(args ? atoi(args) : 255);
     return 0;
 }
 

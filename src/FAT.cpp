@@ -110,6 +110,13 @@ int FAT::allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
     return 0;
 }
 
+void FAT::printFAT(fat_entry_t limit) {
+    std::cout << "\n==========FAT==========\n";
+    PrintHex::printBlock(table, limit + 1, 16);
+    PrintHex::print(free_blocks_head, "\n free blocks head: ");
+    PrintHex::print(free_blocks_tail, " free blocks tail: ");
+    std::cout << "\n=======================\n";
+}
 
 
 

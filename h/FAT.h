@@ -3,6 +3,8 @@
 
 class FAT {
 public: // temporary
+    static void printFAT(fat_entry_t limit);
+
     /**
      * @brief Resets FAT to 0 and occupies needed blocks.
     */

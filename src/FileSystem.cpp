@@ -30,25 +30,34 @@ FileSystem::FileSystem() {
     if(FileSystem::init() < 0)throw -1;
 }
 
-void FileSystem::deallocateTree(Inode *start) {
+void FileSystem::deallocateTree(Inode *start, bool save_to_disk) {
     if(!start)return;
 
     if(start->bro)
-        deallocateTree(start->bro);
+        deallocateTree(start->bro, true);
 
     if(start->child)
-        deallocateTree(start->child);
+        deallocateTree(start->child, true);
 
     start->printInode();
     std::cout << std::endl;
-
+    if(start->isOpened()) {
+        std::cout << "Not closed - closing: " << start->handle << std::endl;
+        get().close(start);
+    }
+    if(save_to_disk && start->changed) {
+        std::cout << "Dirty - saving to disk." << std::endl;
+        FileControlBlock::saveFCBtoDisk(start->fcb);
+    }
     delete start;
 }
 
 FileSystem::~FileSystem() {
-    FAT::saveToDisk();
+
     std::cout << "\n~~~~~~~~~Deallocating Tree~~~~~~~~~\n";
     deallocateTree(root);
+
+    FAT::saveToDisk();
 }
 
 // todo should be done with block + offset
@@ -173,13 +182,13 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
                 // is not null
                 if(is_needed_file_last) {
                     if((*node)->fcb->ext == extension &&
-                       !strcmp((*node)->fcb->path, needed_file.name)) {
+                       !strcmp((*node)->fcb->name, needed_file.name)) {
                         return Inode::Status::FILE_EXISTS; // a match is found
                     }
                     moveRight((*status), (*previous), (*node))
                 } else {
                     if((*node)->fcb->ext == DIR &&
-                       !strcmp((*node)->fcb->path, needed_file.name)) {
+                       !strcmp((*node)->fcb->name, needed_file.name)) {
                         break; // a match is found <3
                     }
                     moveRight((*status), (*previous), (*node))
@@ -194,7 +203,6 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     block_cnt_t data_size = sizeToBlocks(size);
 
     // trying to find node to link current file
-    FileControlBlock::FCB *fcb = nullptr;
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
     // if it's full path, start from root, else from working dir
@@ -207,18 +215,18 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     if(node == root)return -9;// can't open root
     if(ret < 0)
         return ret;
-    if(!strcmp(file_name, ".") || !strcmp(file_name, ".."))return -8;
+    if(ret != Inode::FILE_EXISTS && (!strcmp(file_name, ".") || !strcmp(file_name, "..")))return -8;
 
     printTree();
     std::cout << "Node name: " << file_name << std::endl;
     if(node)
-        std::cout << "Node: " << node->fcb->path << std::endl;
-    std::cout << "Previous node: " << (prev ? prev->fcb->path : "0") << std::endl;
-    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->path : "0") << std::endl;
+        std::cout << "Node: " << node->fcb->name << std::endl;
+    std::cout << "Previous node: " << (prev ? prev->fcb->name : "0") << std::endl;
+    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->name : "0") << std::endl;
     std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
-    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->path : "0") << std::endl;
+    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->name : "0") << std::endl;
     if(node && node->parent)
-        std::cout << "Written logical parent is: " << node->parent->fcb->path << std::endl;
+        std::cout << "Written logical parent is: " << node->parent->fcb->name << std::endl;
 
     std::cout << " \n======Linking with ";
 
@@ -228,13 +236,11 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     if(ret == Inode::FILE_EXISTS) {
         std::cout << "no one======\n";
         std::cout << "ALREADY EXISTS.\n";
-        auto blk = oft.getDataBlock(node->handle);
-        if(blk && blk == node->fcb->data_block) {
+        auto inode = (Inode *) oft.getInodeAddress(node->handle);
+        if(node->isOpened() && inode == node) {
             std::cout << "ALREADY OPENED: " << node->handle << std::endl;
             return node->handle;
         }
-
-        fcb = node->fcb;
     } else {
         std::cout << (is_prev_parent ? "parent======\n" : "brother======\n");
 
@@ -242,12 +248,12 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
             delete node;
             return -1;
         }
-        fcb = new FileControlBlock::FCB(file_name, extension, data_size, data_block, fcb_block);
-        node = new Inode(fcb);
+
+        node = new Inode(new FileControlBlock::FCB(file_name, extension, data_size, data_block, fcb_block));
 
         // link FCBs on disk
         FileControlBlock::linkFCBs(node->fcb, prev->fcb, is_prev_parent);
-
+        //  node->changed = true;
         // link tree nodes
         Inode::linkInodes(node, prev, is_prev_parent, logical_parent);
     }
@@ -256,11 +262,10 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     // usually we would need FCB address to write in OFT but since it's write back, we will directly write in data block
 
     //if(fcb->ext == DIR)return -69; // todo can't open oft entry for directory + dont allocate data block etc
-    FHANDLE handle = oft.set(fcb->data_block,
-                             0); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
-    if(handle >= 0) {
-        node->handle = handle;
-    }
+    FHANDLE handle = oft.set(
+            (uint64_t) node); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
+
+    node->open(handle);
 
     return handle;
 }
@@ -270,11 +275,11 @@ int FileSystem::close(FHANDLE file) {
     std::cout << "\n=====FREE OFT=====\n";
     oft.printFHANDLE(file);
 
+    auto inode = (Inode *) oft.getInodeAddress(file);
+    inode->close();
+
     oft.releaseEntry(file);
     std::cout << "OFT entry freed.\n";
-
-    FAT::saveToDisk();
-
 
     std::cout << "=====CLOSED: " << file << "=====\n";
     return 0;
@@ -291,14 +296,32 @@ int FileSystem::close(const char *pathname, FILE_EXT extension) {
     if(ret != Inode::FILE_EXISTS || node == root)
         return -1;
 
-    auto blk = oft.getDataBlock(node->handle);
-    if(blk && blk == node->fcb->data_block) {
+
+    return close(node);
+}
+
+int FileSystem::close(Inode *node) {
+    if(node->isOpened()) {
         std::cout << "CLOSING: " << node->handle << std::endl;
         close(node->handle);
-        node->handle = -1;
         return 0;
     }
     return -2;
+}
+
+void FileSystem::removeRecursive(Inode *start) {
+    if(!start)return;
+
+    if(start->bro)
+        removeRecursive(start->bro);
+
+    if(start->child)
+        removeRecursive(start->child);
+
+    FAT::releaseBlocks(start->fcb->data_block, start->fcb->data_size);
+    FAT::releaseBlocks(start->fcb->fcb_block, 1);
+    std::cout << std::dec << close(start);
+    delete start;
 }
 
 int FileSystem::remove(const char *path, FILE_EXT extension) { // todo finish
@@ -315,13 +338,27 @@ int FileSystem::remove(const char *path, FILE_EXT extension) { // todo finish
     std::cout << "NEEDS REMOVING\n";
     std::cout << "Node name: " << file_name << std::endl;
     if(node)
-        std::cout << "Node: " << node->fcb->path << std::endl;
-    std::cout << "Previous node: " << (prev ? prev->fcb->path : "0") << std::endl;
-    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->path : "0") << std::endl;
+        std::cout << "Node: " << node->fcb->name << std::endl;
+    std::cout << "Previous node: " << (prev ? prev->fcb->name : "0") << std::endl;
+    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->name : "0") << std::endl;
     std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
-    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->path : "0") << std::endl;
+    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->name : "0") << std::endl;
     if(node && node->parent)
-        std::cout << "Written logical parent is: " << node->parent->fcb->path << std::endl;
+        std::cout << "Written logical parent is: " << node->parent->fcb->name << std::endl;
+
+
+    removeRecursive(node->child); // remove children
+    // deallocate this node
+    FAT::releaseBlocks(node->fcb->data_block, node->fcb->data_size);
+    FAT::releaseBlocks(node->fcb->fcb_block, 1);
+
+    FileControlBlock::unlinkFCBs(node->fcb, node->previous->fcb, node->parent == node->previous);
+    Inode::unlinkInode(node);
+
+    delete node;
+
+    // to prevent deleting directory you are already in1
+    setWorkingDirectory(root);
 
     return 0;
 }
@@ -372,7 +409,7 @@ Inode *FileSystem::getWorkingDirectory() const {
 }
 
 const char *FileSystem::getWorkingDirectoryName() const {
-    return working->fcb->path;
+    return working->fcb->name;
 }
 
 void FileSystem::getWorkingDirectoryPathRecursive(Inode *node, char *path) const {
@@ -381,7 +418,7 @@ void FileSystem::getWorkingDirectoryPathRecursive(Inode *node, char *path) const
     if(node != root) {
 
         strcat(path, "/");
-        strcat(path, node->fcb->path);
+        strcat(path, node->fcb->name);
     }
 }
 
@@ -400,7 +437,6 @@ void FileSystem::listWorkingDirectory() const {
 block_cnt_t FileSystem::sizeToBlocks(size_t size) {
     return (size + BLOCK_SZ - 1) / BLOCK_SZ;
 }
-
 
 
 

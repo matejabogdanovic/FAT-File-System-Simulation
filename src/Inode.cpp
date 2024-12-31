@@ -9,6 +9,7 @@ Inode::Inode(FileControlBlock::FCB *fcb, Inode *child, Inode *bro, Inode *parent
 }
 
 Inode::~Inode() {
+
     delete fcb;
 }
 
@@ -24,6 +25,21 @@ Inode *Inode::makeNode(FileControlBlock::fcb_t fcb) {
     return node;
 }
 
+void Inode::unlinkInode(Inode *node) {
+    bool prev_is_parent = (node->previous == node->parent);
+    if(prev_is_parent) {
+        node->previous->child = node->bro;
+    } else {
+        node->previous->bro = node->bro;
+    }
+    node->previous->changed = true;
+
+    if(node->bro && node->bro->previous == node) {
+        node->bro->previous = node->previous;
+        node->bro->changed = true;
+    }
+}
+
 void Inode::linkInodes(Inode *node, Inode *prev, bool is_prev_parent, Inode *logical_parent) {
     node->parent = logical_parent; // link with logical parent
     node->previous = prev;
@@ -32,6 +48,8 @@ void Inode::linkInodes(Inode *node, Inode *prev, bool is_prev_parent, Inode *log
     } else {
         prev->bro = node;
     }
+    node->changed = true;
+    node->previous->changed = true;
 }
 
 void Inode::printInode() {
@@ -51,7 +69,7 @@ void Inode::printTree(const Inode *node, unsigned parent_name_size, int level) {
     }
 
 
-    std::cout << (node->fcb->path //+ parent_name_size
+    std::cout << (node->fcb->name //+ parent_name_size
     );
     if(node->fcb->ext != DIR) std::cout << "." << file_ext_str[node->fcb->ext];
 
@@ -59,7 +77,7 @@ void Inode::printTree(const Inode *node, unsigned parent_name_size, int level) {
 
 
     if(node->child) {
-        auto len = strlen(node->fcb->path);
+        auto len = strlen(node->fcb->name);
         printTree(node->child,
                   (parent_name_size ? len + 1 : len),
                   level + 1);
@@ -67,6 +85,19 @@ void Inode::printTree(const Inode *node, unsigned parent_name_size, int level) {
     if(node->bro) {
         printTree(node->bro, parent_name_size, level);
     }
+}
+
+bool Inode::isOpened() const {
+    return handle >= 0;
+}
+
+void Inode::open(FHANDLE fhandle) {
+    if(fhandle < 0)return;
+    handle = fhandle;
+}
+
+void Inode::close() {
+    handle = -1;
 }
 
 

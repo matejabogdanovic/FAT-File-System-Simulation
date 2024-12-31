@@ -98,6 +98,10 @@ private:
      */
     int close(const char *path, FILE_EXT extension);
 
+    int close(Inode *node);
+
+    void removeRecursive(Inode *start);
+
     /**
      * @brief Allocates directory tree starting from the root directory.
      * @return <0 if error
@@ -106,7 +110,7 @@ private:
 
     static Inode *loadTree(adisk_t blk, Inode *logical_parent = nullptr, Inode *previous = nullptr);
 
-    static void deallocateTree(Inode *start);
+    static void deallocateTree(Inode *start, bool save_to_disk = true);
 
     void getWorkingDirectoryPathRecursive(Inode *node, char *path) const;
 

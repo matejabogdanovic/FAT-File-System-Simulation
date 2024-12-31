@@ -22,11 +22,10 @@ class OpenFilesTable {
 
     /**
      * @brief Occupies one free entry in the table.
-     * @param data_block
-     * @param offset_in_block
+     * @param inode_address
      * @return index of occupied entry
     */
-    int set(adisk_t data_block, char_t offset_in_block);
+    int set(uint64_t inode_address);
 
     /**
      * @brief
@@ -42,12 +41,7 @@ class OpenFilesTable {
 
     bool isTaken(FHANDLE fhandle) const;
 
-    /**
-     * @brief
-     * @param fhandle
-     * @return 0 if error
-     */
-    adisk_t getDataBlock(FHANDLE fhandle) const;
+    uint64_t getInodeAddress(FHANDLE fhandle) const;
 
     oft_t table{ };
     uint64_t free_vector[FREE_V_SZ] = {0};

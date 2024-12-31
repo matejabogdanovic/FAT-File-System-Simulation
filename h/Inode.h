@@ -6,7 +6,14 @@ struct Inode {
 
     FileControlBlock::FCB *fcb;
     Inode *child, *bro, *parent, *previous;
+    bool changed = false;
     FHANDLE handle = -1;
+
+    bool isOpened() const;
+
+    void open(FHANDLE fhandle);
+
+    void close();
 
     explicit Inode(FileControlBlock::FCB *fcb,
                    Inode *child = nullptr,
@@ -30,6 +37,8 @@ struct Inode {
         LINK_WITH_PARENT = 1,
         FILE_EXISTS = 2
     };
+
+    static void unlinkInode(Inode *node);
 
     static void linkInodes(Inode *node, Inode *prev, bool is_prev_parent, Inode *logical_parent = nullptr);
 

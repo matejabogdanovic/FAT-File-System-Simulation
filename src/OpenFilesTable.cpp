@@ -11,33 +11,30 @@ OpenFilesTable::OpenFilesTable() {
 void OpenFilesTable::printFHANDLE(FHANDLE file) {
     std::cout << "\n====================";
     std::cout << std::dec << "\nFor FHANDLE: " << file << std::endl;
-    PrintHex::print((adisk_t) (table[file][0] >> OFFS_SHIFT), "DATA block: ");
-    std::cout << std::endl;
-    PrintHex::print(table[file][0] & OFFS_MASK, "Offset in block: ");
+    PrintHex::print((table[file][0]), "INODE address: ");
     std::cout << "\n====================\n";
 }
 
 void OpenFilesTable::printOFT(aoft_t limit) {
-    std::cout << "\n==========OFT(Block 1B, Offset 1B, Cursor 2B)==========\n";
+    std::cout << "\n==========OFT(Block 8B, Cursor 8B (should be 2B))==========\n";
     for(dchar_t i = 0; i <= limit; i++) {
         if(i > 0 && i % 8 == 0)
             std::cout << std::endl;
-        PrintHex::print((adisk_t) (table[i][0] >> OFFS_SHIFT));
-        PrintHex::print(table[i][0] & OFFS_MASK);
+        PrintHex::print(table[i][0]);
         PrintHex::print(table[i][1]);
+        std::cout << "|";
     }
     if(limit != OFT_SZ - 1)
         std::cout << "...";
     std::cout << "\n=======================================================\n";
 }
 
-int OpenFilesTable::set(adisk_t data_block, block_cnt_t offset_in_block) {
+int OpenFilesTable::set(uint64_t inode_address) {
     int ent = takeEntry();
     std::cout << "\nOFT entry taken: " << std::dec << ent;
     if(ent < 0)return -1;
     aoft_t entry = ent;
-    table[entry][0] = ((dchar_t) data_block) << OFFS_SHIFT
-                      | offset_in_block;
+    table[entry][0] = inode_address;
     table[entry][1] = 0; // cursor
 
     OpenFilesTable::printOFT(31);
@@ -71,8 +68,8 @@ void OpenFilesTable::releaseEntry(FHANDLE fhandle) {
     if(fhandle < 0)return;
     auto i = fhandle / 64;
     auto j = fhandle % 64;
-    table[fhandle][0] = (dchar_t) 0;
-    table[fhandle][1] = (dchar_t) 0; // cursor
+    table[fhandle][0] = 0;
+    table[fhandle][1] = 0; // cursor
     free_vector[i] &= ~(uint64_t) (1 << j);
 }
 
@@ -85,11 +82,10 @@ bool OpenFilesTable::isTaken(FHANDLE fhandle) const {
     return free_vector[i] & ((uint64_t) (1 << j));
 }
 
-adisk_t OpenFilesTable::getDataBlock(FHANDLE fhandle) const {
-    if(!isTaken(fhandle))return 0;
-
-    return table[fhandle][0] >> OFFS_SHIFT;
+uint64_t OpenFilesTable::getInodeAddress(FHANDLE fhandle) const {
+    return table[fhandle][0];
 }
+
 
 
 

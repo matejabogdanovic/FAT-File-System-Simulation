@@ -34,6 +34,8 @@ private:
     /* other printing */
 
     static int cmdOft(char *args);
+
+    static int cmdFat(char *args);
 };
 
 

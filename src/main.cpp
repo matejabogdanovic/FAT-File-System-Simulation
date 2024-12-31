@@ -51,7 +51,7 @@ int main() {
     //
     File *f, *f1, *f2;
     try {
-        //  f = new File("/C", FILE_EXT::DIR, 1);
+        //f = new File("/C", FILE_EXT::DIR, BLOCK_SZ * (256 - 4));
         // f1 = new File("/C/Users", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
@@ -61,7 +61,7 @@ int main() {
     }
 
     //std::cout << std::dec << "FILE HANDLE: " << f;
-    // delete f;
+    //delete f;
     // delete f1;
     Console::open();
     FileSystem::get().printTree();
