@@ -5,15 +5,15 @@
 
 void FileControlBlock::printFCBt(fcb_t fcb) {
 
-    std::cout << "\n====================";
-    std::cout << "\nFile name: ";
+    std::cout << "====================\n";
+    std::cout << "File name: ";
     for(size_t i = 0; i < sizeof(FCB::name); i++) {
         if(fcb[i] != '\0')std::cout << fcb[i];
     }
 
     std::cout << "\nFCB block:\n";
     PrintHex::printBlock(fcb, sizeof(fcb_t), 8);
-    std::cout << "\n====================\n";
+    std::cout << "====================\n";
 }
 
 int FileControlBlock::populateFCB(fcb_t buf,
@@ -49,28 +49,17 @@ int FileControlBlock::populateFCB(fcb_t buf, FileControlBlock::FCB *fcb) {
 void FileControlBlock::linkFCBs(FCB *fcb, FCB *prev_fcb,
                                 bool is_prev_parent) {
 
-
-    // FileControlBlock::fcb_t buf = {0};
-    // memcpy(buf, fcb, sizeof(FileControlBlock::FCB));
     // write fcb to disk TODO allocate 1/8th not whole block
-    //HDisk::get().writeBlock(buf, fcb->fcb_block);
-    // FileControlBlock::saveFCBtoDisk(fcb);
-    // linking
     if(!is_prev_parent) {
         prev_fcb->bro = fcb->fcb_block;
     } else {
         prev_fcb->child = fcb->fcb_block;
     }
-
     // change parents or brothers fcb TODO change only 1/8th not whole block
-
-    //FileControlBlock::saveFCBtoDisk(prev_fcb);
-
-    // FileControlBlock::populateFCB(blk, prev_fcb); // update previous fcb
-    //HDisk::get().writeBlock(blk, prev_fcb->fcb_block); // write update to disk
     block_t blk = {0};
     HDisk::get().readBlock(blk, prev_fcb->fcb_block);
     PrintHex::printBlock(blk, BLOCK_SZ, 16);
+    std::cout << std::endl;
 }
 
 // todo change to 1/8th
@@ -88,8 +77,6 @@ void FileControlBlock::unlinkFCBs(FileControlBlock::FCB *fcb, FileControlBlock::
         prev_fcb->bro = fcb->bro;
         prev_fcb->bro_offs = fcb->bro_offs;
     }
-
-    //  FileControlBlock::saveFCBtoDisk(prev_fcb);
 }
 
 FileControlBlock::FCB::FCB(const char name[FILENAME_SZ + 1], FILE_EXT extension, block_cnt_t data_size,

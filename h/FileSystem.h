@@ -15,6 +15,8 @@ public:
      */
     static void clearRoot(); // temporary public
 
+    int rename(const char *path, FILE_EXT extension, const char *name);
+
     /**
      * @brief Removes the file found using \p path and \p extension .
      * @param path

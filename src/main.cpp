@@ -41,18 +41,18 @@ void printBlocks() {
     HDisk::get().readBlock(buffer, ROOT_BLK);
 
     PrintHex::printBlock(buffer, BLOCK_SZ / 4, 16);
-    std::cout << "...";
+    std::cout << "..." << std::endl;
 }
 
 int main() {
-    //reset();
+    // reset();
     std::cout << "File system init.\n";
 
     //
     File *f, *f1, *f2;
     try {
-        //f = new File("/C", FILE_EXT::DIR, BLOCK_SZ * (256 - 4));
-        // f1 = new File("/C/Users", FILE_EXT::DIR, 1);
+        // f = new File("/C", FILE_EXT::DIR, BLOCK_SZ * (256 - 4));
+        // f1 = new File("/C", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
         std::cerr << "Error: " << std::dec << error;
@@ -61,8 +61,9 @@ int main() {
     }
 
     //std::cout << std::dec << "FILE HANDLE: " << f;
-    //delete f;
+    // delete f;
     // delete f1;
+    File::rename("./../C/", DIR, "lolcina");
     Console::open();
     FileSystem::get().printTree();
     // std::cout << "Removing:\n" << FileSystem::get().remove("dir/f", FILE_EXT::MB) << std::endl;

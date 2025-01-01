@@ -9,14 +9,14 @@ OpenFilesTable::OpenFilesTable() {
 }
 
 void OpenFilesTable::printFHANDLE(FHANDLE file) {
-    std::cout << "\n====================";
-    std::cout << std::dec << "\nFor FHANDLE: " << file << std::endl;
+    std::cout << "====================\n";
+    std::cout << std::dec << "For FHANDLE: " << file << std::endl;
     PrintHex::print((table[file][0]), "INODE address: ");
     std::cout << "\n====================\n";
 }
 
 void OpenFilesTable::printOFT(aoft_t limit) {
-    std::cout << "\n==========OFT(Block 8B, Cursor 8B (should be 2B))==========\n";
+    std::cout << "==========OFT(Block 8B, Cursor 8B (should be 2B))==========\n";
     for(dchar_t i = 0; i <= limit; i++) {
         if(i > 0 && i % 8 == 0)
             std::cout << std::endl;
@@ -31,7 +31,7 @@ void OpenFilesTable::printOFT(aoft_t limit) {
 
 int OpenFilesTable::set(uint64_t inode_address) {
     int ent = takeEntry();
-    std::cout << "\nOFT entry taken: " << std::dec << ent;
+    std::cout << "OFT entry taken: " << std::dec << ent << std::endl;
     if(ent < 0)return -1;
     aoft_t entry = ent;
     table[entry][0] = inode_address;

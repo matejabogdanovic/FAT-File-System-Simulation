@@ -16,9 +16,9 @@ void FAT::init() {
 }
 
 void FAT::saveToDisk() {
-    std::cout << "\n=====FAT=>DISK[0]=====\n";
+    std::cout << "=====FAT=>DISK[0]=====\n";
     HDisk::get().writeBlock(table, FAT_BLK);
-    std::cout << "\n=====CONTROL=>DISK[1]=====\n";
+    std::cout << "=====CONTROL=>DISK[1]=====\n";
     control[0] = free_blocks_head;
     control[1] = free_blocks_tail;
     HDisk::get().writeBlock(control, CONTROL_BLK);
@@ -60,7 +60,7 @@ void FAT::releaseBlocks(adisk_t start, block_cnt_t num) {
 
     while(table[free_blocks_tail])
         free_blocks_tail = table[free_blocks_tail];
-    PrintHex::print(free_blocks_head, "\nFree Blocks Head (hex): ");
+    PrintHex::print(free_blocks_head, "Free Blocks Head (hex): ");
     PrintHex::print(free_blocks_tail, "Free Blocks Tail (hex): ");
     std::cout << std::endl;
 }
@@ -111,11 +111,11 @@ int FAT::allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
 }
 
 void FAT::printFAT(fat_entry_t limit) {
-    std::cout << "\n==========FAT==========\n";
+    std::cout << "====================FAT====================\n";
     PrintHex::printBlock(table, limit + 1, 16);
     PrintHex::print(free_blocks_head, "\n free blocks head: ");
     PrintHex::print(free_blocks_tail, " free blocks tail: ");
-    std::cout << "\n=======================\n";
+    std::cout << "\n===========================================\n";
 }
 
 

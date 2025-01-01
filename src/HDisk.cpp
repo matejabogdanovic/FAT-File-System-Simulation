@@ -30,5 +30,5 @@ HDisk &HDisk::get() {
 
 HDisk::~HDisk() {
     fclose(disk);
-    std::cout << "\nDisk closed.\n";
+    std::cout << "Disk closed.\n";
 }

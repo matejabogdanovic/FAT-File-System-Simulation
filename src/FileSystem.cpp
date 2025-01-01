@@ -11,16 +11,13 @@ FileSystem &FileSystem::get() {
 
 int FileSystem::init() {
 
-    std::cout << "\n======Loading Tree======\n";
+    std::cout << "======Loading Tree======\n";
     root = FileSystem::loadTree(ROOT_BLK);
     if(!root)return -1;
     Inode::printTree(root);
-    std::cout << "\n======Loading Tree FINISHED======\n";
+    std::cout << "======Loading Tree FINISHED======\n";
     setWorkingDirectory(root);
 
-    //root->printInode();
-    //setWorkingDirectory(root->child->bro->child);
-    //initialized = true;
     return 0;
 }
 
@@ -54,7 +51,7 @@ void FileSystem::deallocateTree(Inode *start, bool save_to_disk) {
 
 FileSystem::~FileSystem() {
 
-    std::cout << "\n~~~~~~~~~Deallocating Tree~~~~~~~~~\n";
+    std::cout << "~~~~~~~~~Deallocating Tree~~~~~~~~~\n";
     deallocateTree(root);
 
     FAT::saveToDisk();
@@ -228,7 +225,7 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
     if(node && node->parent)
         std::cout << "Written logical parent is: " << node->parent->fcb->name << std::endl;
 
-    std::cout << " \n======Linking with ";
+    std::cout << "======Linking with ";
 
     adisk_t data_block = 0; // it's block where the data is stored
     adisk_t fcb_block = 0;
@@ -253,7 +250,7 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
 
         // link FCBs on disk
         FileControlBlock::linkFCBs(node->fcb, prev->fcb, is_prev_parent);
-        //  node->changed = true;
+
         // link tree nodes
         Inode::linkInodes(node, prev, is_prev_parent, logical_parent);
     }
@@ -271,8 +268,8 @@ FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) 
 }
 
 int FileSystem::close(FHANDLE file) {
-    std::cout << "\n=====CLOSING: " << file << "=====";
-    std::cout << "\n=====FREE OFT=====\n";
+    std::cout << "=====CLOSING: " << file << "=====\n";
+    std::cout << "=====FREE OFT=====\n";
     oft.printFHANDLE(file);
 
     auto inode = (Inode *) oft.getInodeAddress(file);
@@ -309,6 +306,28 @@ int FileSystem::close(Inode *node) {
     return -2;
 }
 
+int FileSystem::rename(const char *path, FILE_EXT extension, const char *name) {
+    if(strlen(name) > FILENAME_SZ)return -1;
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    // if it's full path, start from root, else from working dir
+
+    char file_name[FILENAME_SZ + 1] = {0};
+    Inode::Status ret = FileSystem::searchTree(path, extension, &is_prev_parent, &prev, &logical_parent, &node,
+                                               file_name);
+    if(ret != Inode::FILE_EXISTS || node == root)
+        return -2;
+
+    std::cout << "Renaming " << node->fcb->name << "->" << name << std::endl;
+    strcpy(node->fcb->name, name);
+    node->changed = true;
+
+    // to update working directory name
+    setWorkingDirectory(getWorkingDirectory());
+
+    return 0;
+}
+
 void FileSystem::removeRecursive(Inode *start) {
     if(!start)return;
 
@@ -317,6 +336,9 @@ void FileSystem::removeRecursive(Inode *start) {
 
     if(start->child)
         removeRecursive(start->child);
+
+    if(start == getWorkingDirectory())
+        setWorkingDirectory(start->parent);
 
     FAT::releaseBlocks(start->fcb->data_block, start->fcb->data_size);
     FAT::releaseBlocks(start->fcb->fcb_block, 1);
@@ -348,17 +370,21 @@ int FileSystem::remove(const char *path, FILE_EXT extension) { // todo finish
 
 
     removeRecursive(node->child); // remove children
+    if(node == getWorkingDirectory())
+        setWorkingDirectory(node->parent);
     // deallocate this node
     FAT::releaseBlocks(node->fcb->data_block, node->fcb->data_size);
     FAT::releaseBlocks(node->fcb->fcb_block, 1);
+
+    close(node);
 
     FileControlBlock::unlinkFCBs(node->fcb, node->previous->fcb, node->parent == node->previous);
     Inode::unlinkInode(node);
 
     delete node;
 
-    // to prevent deleting directory you are already in1
-    setWorkingDirectory(root);
+    // to prevent deleting directory you are already in
+    // setWorkingDirectory(root);
 
     return 0;
 }
@@ -423,7 +449,6 @@ void FileSystem::getWorkingDirectoryPathRecursive(Inode *node, char *path) const
 }
 
 const char *FileSystem::getWorkingDirectoryPath() const {
-
     return working_path;
 }
 

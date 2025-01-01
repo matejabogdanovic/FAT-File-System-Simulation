@@ -24,3 +24,12 @@ int File::close() {
 File::~File() {
     close();
 }
+
+int File::rename(const char *path, FILE_EXT extension, const char *name) {
+    return FileSystem::get().rename(path, extension, name);
+}
+
+int File::remove(const char *path, FILE_EXT extension) {
+    return FileSystem::get().remove(path, extension);
+}
+
