@@ -45,7 +45,7 @@ void printBlocks() {
 }
 
 int main() {
-    // reset();
+    //reset();
     std::cout << "File system init.\n";
 
     //
@@ -63,7 +63,7 @@ int main() {
     //std::cout << std::dec << "FILE HANDLE: " << f;
     // delete f;
     // delete f1;
-    File::rename("./../C/", DIR, "lolcina");
+    //   File::rename("./../C/", DIR, "lolcina");
     Console::open();
     FileSystem::get().printTree();
     // std::cout << "Removing:\n" << FileSystem::get().remove("dir/f", FILE_EXT::MB) << std::endl;

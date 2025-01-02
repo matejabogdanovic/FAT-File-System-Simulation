@@ -15,7 +15,7 @@ public:
      */
     static void clearRoot(); // temporary public
 
-    int rename(const char *path, FILE_EXT extension, const char *name);
+    int rename(const char *path, const char *name);
 
     /**
      * @brief Removes the file found using \p path and \p extension .
@@ -23,7 +23,7 @@ public:
      * @param extension
      * @return
      */
-    int remove(const char *path, FILE_EXT extension);
+    int remove(const char *path);
 
     /**
      * @brief Prints file system tree starting from root directory.
@@ -71,22 +71,21 @@ private:
      * @param file_name return value
      * @return
      */
-    int getFileName(char *path, FILE_EXT extension, size_t *path_len, char *file_name);
+    int getFileName(char *path, FILE_EXT *extension, size_t *path_len, char *file_name);
 
     // if FILE EXISTS, previous, status and logical parent might not be consistent => use
     // node to access these fields
-    Inode::Status searchTree(const char *path, FILE_EXT extension,
+    Inode::Status searchTree(const char *path, FILE_EXT *extension,
                              Inode::Status *status, Inode **previous, Inode **logical_parent,
                              Inode **node, char *filename);
 
     /**
      * @brief
      * @param path
-     * @param extension
      * @param size
      * @return
      */
-    FHANDLE open(const char *path, FILE_EXT extension, size_t size);
+    FHANDLE open(const char *path, size_t size);
 
     /**
      * @brief Saves cached FAT structures to disk and releases OFT entry taken by \p file.
@@ -98,7 +97,7 @@ private:
     /**
 
      */
-    int close(const char *path, FILE_EXT extension);
+    int close(const char *path);
 
     int close(Inode *node);
 
@@ -121,6 +120,8 @@ private:
     int setWorkingDirectory(Inode *working);
 
     inline static block_cnt_t sizeToBlocks(size_t size);
+
+    // FILE_EXT getFileExtension(char *name);
 
     Inode *root = nullptr;
     Inode *working = nullptr;

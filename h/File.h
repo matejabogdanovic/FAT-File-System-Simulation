@@ -4,11 +4,11 @@
 class File {
 public:
 
-    static int rename(const char *path, FILE_EXT extension, const char *name);
+    static int rename(const char *path, const char *name);
 
-    static int remove(const char *path, FILE_EXT extension);
+    static int remove(const char *path);
 
-    File(const char *path, FILE_EXT extension, size_t size);
+    File(const char *path, size_t size);
 
     // copy
     //File(const File&);
@@ -20,7 +20,7 @@ public:
 
 private:
 
-    int open(const char *path, FILE_EXT extension, size_t size);
+    int open(const char *path, size_t size);
 
     int close();
 

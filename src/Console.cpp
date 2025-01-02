@@ -114,7 +114,7 @@ int Console::cmdTree(char *args1, char *args2, char *args3) {
 
 int Console::cmdOpen(char *args1, char *args2, char *args3) {
     if(!args1 || args2 || args3)return -1;
-    int ret = FileSystem::get().open(args1, FILE_EXT::DIR, 1);
+    int ret = FileSystem::get().open(args1, 1);
     FileSystem::get().printTree();
     return ret;
 }
@@ -122,18 +122,18 @@ int Console::cmdOpen(char *args1, char *args2, char *args3) {
 int Console::cmdClose(char *args1, char *args2, char *args3) {
     if(!args1 || args2 || args3)return -1;
 
-    return FileSystem::get().close(args1, FILE_EXT::DIR);
+    return FileSystem::get().close(args1);
 }
 
 int Console::cmdRename(char *args1, char *args2, char *args3) {
     if(!args1 || !args2 || args3)return -1;
 
-    return FileSystem::get().rename(args1, DIR, args2);
+    return FileSystem::get().rename(args1, args2);
 }
 
 int Console::cmdRemove(char *args1, char *args2, char *args3) {
     if(!args1 || args2 || args3)return -1;
-    return FileSystem::get().remove(args1, FILE_EXT::DIR);;
+    return FileSystem::get().remove(args1);
 }
 
 /* ==================== other printing ==================== */

@@ -22,10 +22,12 @@ static const uint16_t PATHNAME_SZ = 256;
 //typedef char filename_t[FILENAME_SZ];
 //typedef const char pathname_t[FILENAME_SZ - 1];
 enum FILE_EXT : uint8_t {
+    error = 0xFF,
     MB = 0x01,
     DIR = 0x00
 };
-static const char *file_ext_str[2] = {"dir", "mb"};
+static const auto FILE_EXT_CNT = 2;
+static const char *file_ext_str[FILE_EXT_CNT] = {"dir", "mb"};
 typedef int16_t FHANDLE;
 
 

@@ -80,21 +80,50 @@ Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent, Inode *previou
     return node;
 }
 
-int FileSystem::getFileName(char *path, FILE_EXT extension, size_t *path_len, char *file_name) {
+int FileSystem::getFileName(char *path, FILE_EXT *extension, size_t *path_len, char *file_name) {
+    bool has_to_be_dir = false;
     if(path[(*path_len) - 1] == '/') { // if last character is / then it must be ..../dir/
-        if(extension != DIR)return -1; // error if ..../file/ - can't treat file like directory
+        has_to_be_dir = true; // error if ..../file/ - can't treat file like directory
         path[--(*path_len)] = 0; // ..../dir/ => ..../dir
         if(path[*path_len - 1] == '/')return -1; // if ....// error because no directory name!
     }
     // now find file name going from back of the path to first /
     const char *p = path + (*path_len) - 1;
-    while(*p != '/' && p != path) {
-        p--;
+    char *ext = path + (*path_len) - 1;
+    while(true) {
+        if(*p != '/' && p != path)
+            p--;
+        else if(*ext != '.' && *ext != '/' && ext != path)
+            ext--;
+        else break;
     }
     if(*p == '/')p++; // position p at the beginning of name
+    if(!strcmp(p, ".") || !strcmp(p, "..")) {
+        *extension = DIR;
+    } else {
+        if(*ext == '.') {
+            *ext = 0;
+            ext++;
+            (*path_len) = ext - path - 1;
+            int i = 0;
+            for(; i < FILE_EXT_CNT; ++i) {
+                if(!strcmp(file_ext_str[i], ext)) {
+                    *extension = (FILE_EXT) i;
+                    break;
+                }
+            }
+            if(i == FILE_EXT_CNT)return -10;
+        } else if(*ext == '/' || ext == path)
+            *extension = DIR;
+        else
+            return -11;
+    }
+    if(has_to_be_dir && (*extension) != DIR)return -1;
+
 
     auto file_name_len = (*path_len) - (p - path);
     // invalid file name length
+
     if(file_name_len > FILENAME_SZ)return -2;
 
     strcpy(file_name, p);
@@ -127,7 +156,7 @@ node = node->parent;\
 logical_parent = node->parent;
 
 // if FILE EXISTS, previous, status and logical parent might not be consistent
-Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
+Inode::Status FileSystem::searchTree(const char *path, FILE_EXT *extension,
                                      Inode::Status *status, Inode **previous, Inode **logical_parent,
                                      Inode **node, char *filename) {
     //  ================ check args
@@ -135,6 +164,7 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
     // check if wanted directory is root
     if(!strcmp(path, "/")) {
         *node = root;
+        *extension = DIR;
         *previous = nullptr;
         *logical_parent = nullptr;
         *status = Inode::Status::LINK_WITH_PARENT;
@@ -149,7 +179,7 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
     strcpy(path_copy, path);
     if(getFileName(path_copy, extension, &path_len, filename) < 0)
         return Inode::Status::ERROR_INVALID_PATH_NAME; // invalid name
-
+    std::cout << "FILE EXTENSION IS: " << file_ext_str[(*extension)] << std::endl;
     // ================ start search
     bool is_relative_path = (path[0] != '/');
     *node = (!is_relative_path ? root : getWorkingDirectory());
@@ -178,7 +208,7 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
                     return is_needed_file_last ? (*status) : Inode::Status::ERROR_INVALID_PATH_NAME;
                 // is not null
                 if(is_needed_file_last) {
-                    if((*node)->fcb->ext == extension &&
+                    if((*node)->fcb->ext == *extension &&
                        !strcmp((*node)->fcb->name, needed_file.name)) {
                         return Inode::Status::FILE_EXISTS; // a match is found
                     }
@@ -195,17 +225,18 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT extension,
     }
 }
 
-FHANDLE FileSystem::open(const char *pathname, FILE_EXT extension, size_t size) {
+FHANDLE FileSystem::open(const char *pathname, size_t size) {
 
     block_cnt_t data_size = sizeToBlocks(size);
 
     // trying to find node to link current file
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
+    FILE_EXT extension;
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(pathname, extension,
+    Inode::Status ret = FileSystem::searchTree(pathname, &extension,
                                                &is_prev_parent,
                                                &prev, &logical_parent, &node,
                                                file_name);
@@ -282,13 +313,14 @@ int FileSystem::close(FHANDLE file) {
     return 0;
 }
 
-int FileSystem::close(const char *pathname, FILE_EXT extension) {
+int FileSystem::close(const char *pathname) {
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
+    FILE_EXT extension;
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(pathname, extension, &is_prev_parent, &prev, &logical_parent, &node,
+    Inode::Status ret = FileSystem::searchTree(pathname, &extension, &is_prev_parent, &prev, &logical_parent, &node,
                                                file_name);
     if(ret != Inode::FILE_EXISTS || node == root)
         return -1;
@@ -306,14 +338,16 @@ int FileSystem::close(Inode *node) {
     return -2;
 }
 
-int FileSystem::rename(const char *path, FILE_EXT extension, const char *name) {
+int FileSystem::rename(const char *path,
+                       const char *name) {
     if(strlen(name) > FILENAME_SZ)return -1;
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
+    FILE_EXT extension;
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, extension, &is_prev_parent, &prev, &logical_parent, &node,
+    Inode::Status ret = FileSystem::searchTree(path, &extension, &is_prev_parent, &prev, &logical_parent, &node,
                                                file_name);
     if(ret != Inode::FILE_EXISTS || node == root)
         return -2;
@@ -346,11 +380,12 @@ void FileSystem::removeRecursive(Inode *start) {
     delete start;
 }
 
-int FileSystem::remove(const char *path, FILE_EXT extension) { // todo finish
+int FileSystem::remove(const char *path) { // todo finish
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
+    FILE_EXT extension;
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, extension,
+    Inode::Status ret = FileSystem::searchTree(path, &extension,
                                                &is_prev_parent,
                                                &prev, &logical_parent, &node,
                                                file_name);
@@ -411,16 +446,17 @@ int FileSystem::setWorkingDirectory(Inode *dir) {
 int FileSystem::setWorkingDirectory(char *path) {
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
+    FILE_EXT extension;
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, DIR, &is_prev_parent, &prev, &logical_parent, &node,
+    Inode::Status ret = FileSystem::searchTree(path, &extension, &is_prev_parent, &prev, &logical_parent, &node,
                                                file_name);
     if(ret < 0) {
         return ret;
     }
 
-    if(!node)return -10;
+    if(!node || extension != DIR)return -10;
 
     setWorkingDirectory(node);
     return 0;
@@ -462,6 +498,8 @@ void FileSystem::listWorkingDirectory() const {
 block_cnt_t FileSystem::sizeToBlocks(size_t size) {
     return (size + BLOCK_SZ - 1) / BLOCK_SZ;
 }
+
+
 
 
 
