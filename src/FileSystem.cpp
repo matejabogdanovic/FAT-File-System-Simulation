@@ -93,9 +93,10 @@ int FileSystem::getFileName(char *path, FILE_EXT *extension, size_t *path_len, c
     while(true) {
         if(*p != '/' && p != path)
             p--;
-        else if(*ext != '.' && *ext != '/' && ext != path)
+        if(*ext != '.' && *ext != '/' && ext != path)
             ext--;
-        else break;
+        if(!(*p != '/' && p != path) && !(*ext != '.' && *ext != '/' && ext != path))
+            break;
     }
     if(*p == '/')p++; // position p at the beginning of name
     if(!strcmp(p, ".") || !strcmp(p, "..")) {
