@@ -244,6 +244,7 @@ FHANDLE FileSystem::open(const char *pathname, size_t size) {
     if(ret < 0)
         return ret;
     if(ret != Inode::FILE_EXISTS && (!strcmp(file_name, ".") || !strcmp(file_name, "..")))return -8;
+    if(strstr(file_name, " "))return -9; // can't contain blank spaces in filename
 
     printTree();
     std::cout << "Node name: " << file_name << std::endl;

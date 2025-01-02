@@ -51,7 +51,7 @@ int main() {
     //
     File *f, *f1, *f2;
     try {
-        // f = new File("/C", FILE_EXT::DIR, BLOCK_SZ * (256 - 4));
+        // f = new File("dir1/f ajl.mb", 1);
         // f1 = new File("/C", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
