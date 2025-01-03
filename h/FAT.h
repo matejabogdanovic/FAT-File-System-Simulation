@@ -10,11 +10,6 @@ public: // temporary
     */
     static void clearFAT();
 
-    /**
-     * @brief Resets memory to 0.
-    */
-    static void clearMemory();
-
 private:
     friend class FileSystem;
 

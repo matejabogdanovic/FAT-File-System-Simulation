@@ -81,14 +81,6 @@ void FAT::clearFAT() {
     HDisk::get().writeBlock(control, CONTROL_BLK);
 }
 
-void FAT::clearMemory() { // TODO: change place
-    block_t buf = {0};
-
-    for(uint16_t i = 0; i < BLOCK_SZ; i++) {
-        HDisk::get().writeBlock(buf, i);
-    }
-}
-
 int FAT::allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
                            adisk_t *fcb_block) {
 

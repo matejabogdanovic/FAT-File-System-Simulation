@@ -293,7 +293,7 @@ FHANDLE FileSystem::open(const char *pathname, size_t size) {
 
     //if(fcb->ext == DIR)return -69; // todo can't open oft entry for directory + dont allocate data block etc
     FHANDLE handle = oft.set(
-            (uint64_t) node); // TODO change oft, we need only entry_index(block to start writing/reading) and cursor
+            (uint64_t) node);
 
     node->open(handle);
 
@@ -382,7 +382,7 @@ void FileSystem::removeRecursive(Inode *start) {
     delete start;
 }
 
-int FileSystem::remove(const char *path) { // todo finish
+int FileSystem::remove(const char *path) {
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
     Inode::Status is_prev_parent;
     FILE_EXT extension;
@@ -494,6 +494,14 @@ void FileSystem::listWorkingDirectory() const {
     for(Inode *next = working->child; next; next = next->bro) {
         next->printInode();
         std::cout << std::endl;
+    }
+}
+
+void FileSystem::clearMemory() {
+    block_t buf = {0};
+
+    for(uint16_t i = 0; i < BLOCK_SZ; i++) {
+        HDisk::get().writeBlock(buf, i);
     }
 }
 

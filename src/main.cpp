@@ -22,7 +22,7 @@
 
 
 void reset() {
-    // FAT::clearMemory();
+    // FileSystem::clearMemory();
     FileSystem::clearRoot();
     FAT::clearFAT();
 }
