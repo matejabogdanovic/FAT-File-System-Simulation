@@ -54,7 +54,7 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
 - **`cursor $path$`**  
   Returns a cursor.
 
-- **`seek $path$ cursor`**  
+- **`seek $path$ $cursor$`**  
   Set a cursor. Should be used in combination with `cursor` or `eof`.
 
 - **`close $path$`**  
