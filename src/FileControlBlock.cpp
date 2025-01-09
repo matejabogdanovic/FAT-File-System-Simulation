@@ -13,7 +13,7 @@ void FileControlBlock::printFCBt(fcb_t fcb) {
 
     std::cout << "\nFCB block:\n";
     PrintHex::printBlock(fcb, sizeof(fcb_t), 8);
-    std::cout << "====================\n";
+    std::cout << "\n====================";
 }
 
 int FileControlBlock::populateFCB(fcb_t buf,

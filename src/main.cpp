@@ -4,6 +4,7 @@
 #include "../h/PrintHex.h"
 #include "../h/Console.h"
 
+#include <conio.h>
 /*
 * This is a FAT simulation. Entry - 8bit, 2^8 blocks. Each block is 2^8*1B.
 * File harddisk.txt represents disk. 
@@ -22,7 +23,7 @@
 
 
 void reset() {
-    // FileSystem::clearMemory();
+    //FileSystem::clearMemory();
     FileSystem::clearRoot();
     FAT::clearFAT();
 }
@@ -51,7 +52,8 @@ int main() {
     //
     File *f, *f1, *f2;
     try {
-        // f = new File("dir1/f ajl.mb", 1);
+        f = new File("file2.mb", 1);
+        // f2 = new File("file2.mb", 1);
         // f1 = new File("/C", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
     } catch(short error) {
@@ -59,10 +61,22 @@ int main() {
         printBlocks();
         return -1;
     }
+    const char *data = "123";
+    //for(int i = 0; i < BLOCK_SZ * 2 - 2; ++i) {
+    //     data[i] = '6';
+    // }
 
+    f->seek(0);
+    std::cout << f->write(data, strlen(data));
+    f->seek(f->getEOF());
+    std::cout << f->write(data, strlen(data));
+
+    // std::cout << f->write(data, strlen(data));
+    // std::cout << f->write(data, strlen(data));
+    // std::cout << f->write(data, strlen(data));
     //std::cout << std::dec << "FILE HANDLE: " << f;
-    // delete f;
-    // delete f1;
+    delete f;
+    // delete f2;
     //   File::rename("./../C/", DIR, "lolcina");
     Console::open();
     FileSystem::get().printTree();
@@ -70,6 +84,7 @@ int main() {
     // delete f2;
 
     printBlocks();
+
 
     return 1;
 }

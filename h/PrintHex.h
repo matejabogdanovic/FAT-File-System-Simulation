@@ -8,8 +8,8 @@ class PrintHex {
 public:
     static void print(int val, const char *comment = "") {
         std::cout << comment << " ";
-        std::cout << std::setw(2) << std::setfill('0') <<
-                  std::hex << val;
+        std::cout << std::setw(4) << std::setfill('0')
+                  << std::hex << val;
         std::cout << " ";
     }
 

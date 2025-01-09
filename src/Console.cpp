@@ -1,5 +1,5 @@
 #include "../h/Console.h"
-
+#include <limits>
 
 const std::map<std::string, Console::FuncPtr> Console::commands_map = std::map<std::string, Console::FuncPtr>{
         {"help",   Console::cmdHelp},
@@ -9,6 +9,11 @@ const std::map<std::string, Console::FuncPtr> Console::commands_map = std::map<s
         {"tree",   Console::cmdTree},
 
         {"open",   Console::cmdOpen},
+        {"write",  Console::cmdWrite},
+        {"read",   Console::cmdRead},
+        {"eof",    Console::cmdEof},
+        {"cursor", Console::cmdCursor},
+        {"seek",   Console::cmdSeek},
         {"close",  Console::cmdClose},
         {"rename", Console::cmdRename},
         {"remove", Console::cmdRemove},
@@ -21,14 +26,14 @@ const std::map<std::string, Console::FuncPtr> Console::commands_map = std::map<s
 int Console::open() {
 
     int ret = 0;
-    char cmd[PATHNAME_SZ + 10];
+    std::string cmd;
     char *command = nullptr;
     while(true) {
 
         std::cout << FileSystem::get().getWorkingDirectoryPath() << ">";
-        std::cin.getline(cmd, PATHNAME_SZ + 10);
+        std::getline(std::cin, cmd);
 
-        command = strtok(cmd, " ");
+        command = strtok(cmd.data(), " ");
 
         if(!command) {
             FileSystem::get().printTree();
@@ -68,16 +73,21 @@ int Console::cmdHelp(char *args1, char *args2, char *args3) {
     std::cout << "=================================================================\n"
               << "Help arrived! Check out these sick commands!\n"
               << "$arg_name$ - required arguments\n"
+              << "--->$path$ can be relative or absolute"
               << "[arg_name] - optional arguments\n"
               << "=================================================================\n"
               << "'exit' - quit console\n"
-              << "'cd $path$' - change directory; $path$ can be relative or absolute\n"
+              << "'cd $path$' - change directory\n"
               << "'ls' - list current directory files\n"
               << "'tree root' - print tree starting from root\n"
-              << "'open $path$' - open file/directory; $path$ can be relative or absolute\n"
-              << "'close $path$' - close file/directory; $path$ can be relative or absolute\n"
-              << "'rename $path$ $name$' - rename file/directory to $name$; $path$ can be relative or absolute\n"
-              << "'remove $path$' - quit console; $path$ can be relative or absolute\n"
+              << "'open $path$' - open file/directory\n"
+              << "'write $path$' - write to a file\n"
+              << "'read $path$' - read from a file\n"
+              << "'eof $path$' - returns a cursor to the end of file\n"
+              << "'cursor $path$' - returns a cursor\n"
+              << "'seek $path$ $cursor$' - set a cursor; should be used in combination with 'cursor' or 'eof';\n"
+              << "'rename $path$ $name$' - rename file/directory to $name$\n"
+              << "'remove $path$' - quit console\n"
               << "'oft [last_entry_to_print]' - list oft\n"
               << "'fat [last_entry_to_print]' - list fat\n"
               << "=================================================================\n";
@@ -119,6 +129,67 @@ int Console::cmdOpen(char *args1, char *args2, char *args3) {
     return ret;
 }
 
+int Console::cmdWrite(char *args1, char *args2, char *args3) {
+    if(!args1 || args2 || args3)return -1;
+    FHANDLE handle = FileSystem::get().getFileHandle(args1);
+    if(handle < 0) {
+        std::cout << "File not opened.\n";
+        return 0;
+    }
+
+    std::cout << "Text to write: ";
+    std::string data;
+    std::getline(std::cin, data);
+
+    auto ret = FileSystem::get().fwrite(handle, data.length(), data.data());
+    std::cout << "Written: " << std::dec << ret << std::endl;
+
+    return ret;
+}
+
+int Console::cmdRead(char *args1, char *args2, char *args3) {
+    return 0;
+}
+
+int Console::cmdEof(char *args1, char *args2, char *args3) {
+    if(!args1 || args2 || args3)return -1;
+    FHANDLE handle = FileSystem::get().getFileHandle(args1);
+    if(handle < 0) {
+        std::cout << "File not opened.\n";
+    }
+    uint16_t eof = 0;
+    auto ret = FileSystem::get().feof(handle, &eof);
+    std::cout << "End of file is at: " << std::dec << eof << std::endl;
+
+    return ret;
+}
+
+int Console::cmdCursor(char *args1, char *args2, char *args3) {
+    if(!args1 || args2 || args3)return -1;
+    FHANDLE handle = FileSystem::get().getFileHandle(args1);
+    if(handle < 0) {
+        std::cout << "File not opened.\n";
+        return 0;
+    }
+    uint16_t cursor = 0;
+    auto ret = FileSystem::get().fcursor(handle, &cursor);
+    std::cout << "Cursor is at: " << std::dec << cursor << std::endl;
+
+
+    return ret;
+}
+
+int Console::cmdSeek(char *args1, char *args2, char *args3) {
+    if(!args1 || !args2 || args3)return -1;
+    FHANDLE handle = FileSystem::get().getFileHandle(args1);
+    if(handle < 0) {
+        std::cout << "File not opened.\n";
+        return 0;
+    }
+    FileSystem::get().fseek(handle, (uint16_t) atoi(args2));
+    return 0;
+}
+
 int Console::cmdClose(char *args1, char *args2, char *args3) {
     if(!args1 || args2 || args3)return -1;
 
@@ -149,6 +220,16 @@ int Console::cmdFat(char *args1, char *args2, char *args3) {
     FAT::printFAT(args1 ? atoi(args1) : 255);
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

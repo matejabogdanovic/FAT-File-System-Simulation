@@ -10,13 +10,15 @@ public:
         FILE_EXT ext;
         block_cnt_t data_size;
         adisk_t data_block;
+        adisk_t end_of_file_block = 0;
+        char_t end_of_file_offs = 0;
         adisk_t fcb_block;
         adisk_t fcb_block_offs;
         adisk_t child;
         char_t child_offs;
         adisk_t bro;
         char_t bro_offs;
-        char_t padding[7] = {0};
+        char_t padding[5] = {0};
         // char_t padding[11] = {0};
 
 

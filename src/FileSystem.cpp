@@ -61,7 +61,7 @@ FileSystem::~FileSystem() {
 Inode *FileSystem::loadTree(adisk_t block, Inode *logical_parent, Inode *previous) {
     block_t fcb = {0};
     HDisk::get().readBlock(fcb, block);
-    //FileControlBlock::printFCBt(fcb);
+    FileControlBlock::printFCBt(fcb);
     Inode *node = Inode::makeNode(fcb);
     if(!node)return nullptr;
     if(logical_parent) {
@@ -293,11 +293,104 @@ FHANDLE FileSystem::open(const char *pathname, size_t size) {
 
     //if(fcb->ext == DIR)return -69; // todo can't open oft entry for directory + dont allocate data block etc
     FHANDLE handle = oft.set(
-            (uint64_t) node);
+            (uint64_t) node, node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs);
 
     node->open(handle);
 
     return handle;
+}
+
+int FileSystem::feof(FHANDLE file, uint16_t *eof_cursor) {
+    if(file < 0 || !eof_cursor)return -1;// check if file is opened
+    auto node = (Inode *) oft.getInodeAddress(file);
+    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+            )
+        return -2;
+    *eof_cursor = node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs;
+    return 0;
+}
+
+int FileSystem::fcursor(FHANDLE file, uint16_t *file_cursor) {
+    if(file < 0 || !file_cursor)return -1;// check if file is opened
+    auto node = (Inode *) oft.getInodeAddress(file);
+    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+            )
+        return -2;
+    *file_cursor = oft.getCursor(file);; // get file cursor
+    return 0;
+}
+
+int FileSystem::fseek(FHANDLE file, uint16_t pos) {
+    if(file < 0)return -1; // check if file is opened
+    auto node = (Inode *) oft.getInodeAddress(file);
+    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+            )
+        return -2;
+    return oft.setCursor(file, pos);
+}
+
+int FileSystem::fread(FHANDLE file, size_t count, char *buf) {
+    if(file < 0 || count == 0 || !buf)return -1;
+    auto node = (Inode *) oft.getInodeAddress(file);
+    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+            )
+        return -2;
+    return 0;
+}
+
+int32_t FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
+    if(file < 0 || !data)return -1;
+    if(count == 0)return 0;
+
+    auto node = (Inode *) oft.getInodeAddress(file);
+    if(!node || node->fcb->ext != MB// || !node->isOpened()
+            )
+        return -2;
+
+    uint64_t cursor = oft.getCursor(file);
+    adisk_t data_block = node->fcb->data_block;
+    // move wanted data block
+    for(int i = 0; data_block != 0 && i < cursor / BLOCK_SZ; ++i) {
+        data_block = FAT::getNextBlock(data_block);
+    }
+    size_t to_write_cnt = 0, written_cnt = 0, remain_cnt = count;
+    while(data_block != 0 && remain_cnt != 0) {
+        // calculate size to write
+        if(remain_cnt <= BLOCK_SZ - cursor % BLOCK_SZ) { // falls into this block
+            to_write_cnt = remain_cnt; // write until buf[cursor + cnt]
+        } else {
+            to_write_cnt = BLOCK_SZ - cursor % BLOCK_SZ; // write until buf[255]
+        }
+        block_t buf = {0};
+        HDisk::get().readBlock(buf, data_block);
+
+        memcpy(buf + cursor % BLOCK_SZ,
+               data + written_cnt,
+               to_write_cnt);
+
+        PrintHex::printBlock(buf, BLOCK_SZ, 16);
+        std::cout << std::endl;
+
+        HDisk::get().writeBlock(buf, data_block);
+
+
+        written_cnt += to_write_cnt;
+        remain_cnt -= to_write_cnt;
+        oft.moveCursor(file, to_write_cnt);
+        data_block = FAT::getNextBlock(data_block); // get next block (even if remain_cnt is 0 now - will break)
+
+        cursor = oft.getCursor(file);
+    }
+
+    // if cursor is larger than end of file, move end of file to cursor
+    if(cursor > (node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs)) {
+        node->fcb->end_of_file_offs = (uint8_t) cursor;
+        node->fcb->end_of_file_block = cursor / BLOCK_SZ;
+
+        node->changed = true;
+    }
+    oft.printFHANDLE(node->handle);
+    return (int32_t) written_cnt;
 }
 
 int FileSystem::close(FHANDLE file) {
@@ -316,15 +409,10 @@ int FileSystem::close(FHANDLE file) {
 }
 
 int FileSystem::close(const char *pathname) {
-    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
-    FILE_EXT extension;
-    // if it's full path, start from root, else from working dir
 
-    char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(pathname, &extension, &is_prev_parent, &prev, &logical_parent, &node,
-                                               file_name);
-    if(ret != Inode::FILE_EXISTS || node == root)
+    Inode *node = getExistingFile(pathname);
+
+    if(!node || node == root)
         return -1;
 
 
@@ -342,17 +430,14 @@ int FileSystem::close(Inode *node) {
 
 int FileSystem::rename(const char *path,
                        const char *name) {
-    if(strlen(name) > FILENAME_SZ)return -1;
-    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
-    FILE_EXT extension;
-    // if it's full path, start from root, else from working dir
+    auto len = strlen(name);
+    if(len > FILENAME_SZ)return -1;
 
-    char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, &extension, &is_prev_parent, &prev, &logical_parent, &node,
-                                               file_name);
-    if(ret != Inode::FILE_EXISTS || node == root)
+    Inode *node = getExistingFile(path);
+    if(!node || node == root)
         return -2;
+
+    if(strstr(name, ".") || strstr(name, "/")) return -3;
 
     std::cout << "Renaming " << node->fcb->name << "->" << name << std::endl;
     strcpy(node->fcb->name, name);
@@ -383,28 +468,8 @@ void FileSystem::removeRecursive(Inode *start) {
 }
 
 int FileSystem::remove(const char *path) {
-    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
-    FILE_EXT extension;
-    char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, &extension,
-                                               &is_prev_parent,
-                                               &prev, &logical_parent, &node,
-                                               file_name);
-    if(node == root)return -8;
-    if(ret != Inode::FILE_EXISTS)return (ret < 0) ? ret : -1;
-
-    std::cout << "NEEDS REMOVING\n";
-    std::cout << "Node name: " << file_name << std::endl;
-    if(node)
-        std::cout << "Node: " << node->fcb->name << std::endl;
-    std::cout << "Previous node: " << (prev ? prev->fcb->name : "0") << std::endl;
-    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->name : "0") << std::endl;
-    std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
-    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->name : "0") << std::endl;
-    if(node && node->parent)
-        std::cout << "Written logical parent is: " << node->parent->fcb->name << std::endl;
-
+    Inode *node = getExistingFile(path);
+    if(!node || node == root)return -8;
 
     removeRecursive(node->child); // remove children
     if(node == getWorkingDirectory())
@@ -446,19 +511,8 @@ int FileSystem::setWorkingDirectory(Inode *dir) {
 }
 
 int FileSystem::setWorkingDirectory(char *path) {
-    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
-    FILE_EXT extension;
-    // if it's full path, start from root, else from working dir
-
-    char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, &extension, &is_prev_parent, &prev, &logical_parent, &node,
-                                               file_name);
-    if(ret < 0) {
-        return ret;
-    }
-
-    if(!node || extension != DIR)return -10;
+    Inode *node = getExistingFile(path);
+    if(!node || node->fcb->ext != DIR)return -10;
 
     setWorkingDirectory(node);
     return 0;
@@ -508,6 +562,40 @@ void FileSystem::clearMemory() {
 block_cnt_t FileSystem::sizeToBlocks(size_t size) {
     return (size + BLOCK_SZ - 1) / BLOCK_SZ;
 }
+
+Inode *FileSystem::getExistingFile(const char *path) {
+    // trying to find node to link current file
+    Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
+    Inode::Status is_prev_parent;
+    FILE_EXT extension;
+    // if it's full path, start from root, else from working dir
+
+    char file_name[FILENAME_SZ + 1] = {0};
+    Inode::Status ret = FileSystem::searchTree(path, &extension,
+                                               &is_prev_parent,
+                                               &prev, &logical_parent, &node,
+                                               file_name);
+    if(ret != Inode::FILE_EXISTS) return nullptr;
+    return node;
+}
+
+FHANDLE FileSystem::getFileHandle(const char *path) {
+    if(!path)return -1;
+    Inode *node = getExistingFile(path);
+    if(!node)return -2;
+    return node->handle;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 

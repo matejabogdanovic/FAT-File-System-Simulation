@@ -48,5 +48,12 @@ private:
      * @param num number of blocks to release from \p start
      */
     static void releaseBlocks(adisk_t start, block_cnt_t num);
+
+    /**
+     * @brief Gets next block from FAT.
+     * @param start
+     * @return 0 if error
+     */
+    static adisk_t getNextBlock(adisk_t start);
 };
 

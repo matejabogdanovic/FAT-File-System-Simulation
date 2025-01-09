@@ -27,6 +27,16 @@ private:
 
     static int cmdOpen(char *args1, char *args2, char *args3);
 
+    static int cmdWrite(char *args1, char *args2, char *args3);
+
+    static int cmdRead(char *args1, char *args2, char *args3);
+
+    static int cmdEof(char *args1, char *args2, char *args3);
+
+    static int cmdCursor(char *args1, char *args2, char *args3);
+
+    static int cmdSeek(char *args1, char *args2, char *args3);
+
     static int cmdClose(char *args1, char *args2, char *args3);
 
     static int cmdRename(char *args1, char *args2, char *args3);

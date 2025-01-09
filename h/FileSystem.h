@@ -115,6 +115,16 @@ private:
      */
     FHANDLE open(const char *path, size_t size);
 
+    int fread(FHANDLE file, size_t count, char *buf);
+
+    int feof(FHANDLE file, uint16_t *eof_cursor);
+
+    int fcursor(FHANDLE file, uint16_t *cursor);
+
+    int fseek(FHANDLE file, uint16_t pos);
+
+    int32_t fwrite(FHANDLE file, size_t count, const char *data);
+
     /**
      * @brief Saves cached FAT structures to disk and releases OFT entry taken by \p file.
      * @param file
@@ -171,6 +181,20 @@ private:
      * @param path argument and return value
      */
     void getWorkingDirectoryPathRecursive(Inode *node, char *path) const;
+
+    /**
+     * @brief Finds existing file node.
+     * @param path
+     * @return nullptr if doesn't exist
+     */
+    Inode *getExistingFile(const char *path);
+
+    /**
+     * @brief Gets file handle.
+     * @param path
+     * @return <0 if file isn't opened or doesn't exist
+     */
+    FHANDLE getFileHandle(const char *path);
 
     /**
      * @brief

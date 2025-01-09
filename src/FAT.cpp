@@ -110,6 +110,10 @@ void FAT::printFAT(fat_entry_t limit) {
     std::cout << "\n===========================================\n";
 }
 
+adisk_t FAT::getNextBlock(adisk_t start) {
+    return table[start];
+}
+
 
 
 

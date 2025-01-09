@@ -12,6 +12,7 @@ void OpenFilesTable::printFHANDLE(FHANDLE file) {
     std::cout << "====================\n";
     std::cout << std::dec << "For FHANDLE: " << file << std::endl;
     PrintHex::print((table[file][0]), "INODE address: ");
+    PrintHex::print((table[file][1]), "Cursor: ");
     std::cout << "\n====================\n";
 }
 
@@ -29,13 +30,13 @@ void OpenFilesTable::printOFT(aoft_t limit) {
     std::cout << "\n=======================================================\n";
 }
 
-int OpenFilesTable::set(uint64_t inode_address) {
+int OpenFilesTable::set(uint64_t inode_address, uint64_t cursor) {
     int ent = takeEntry();
     std::cout << "OFT entry taken: " << std::dec << ent << std::endl;
     if(ent < 0)return -1;
     aoft_t entry = ent;
     table[entry][0] = inode_address;
-    table[entry][1] = 0; // cursor
+    table[entry][1] = cursor;
 
     OpenFilesTable::printOFT(31);
     return entry;
@@ -85,6 +86,26 @@ bool OpenFilesTable::isTaken(FHANDLE fhandle) const {
 uint64_t OpenFilesTable::getInodeAddress(FHANDLE fhandle) const {
     return table[fhandle][0];
 }
+
+int OpenFilesTable::moveCursor(FHANDLE fhandle, int32_t val) {
+    if(!isTaken(fhandle))return -1;
+    table[fhandle][1] += val;
+    return 0;
+}
+
+int OpenFilesTable::setCursor(FHANDLE fhandle, int32_t val) {
+    if(!isTaken(fhandle))return -1;
+    table[fhandle][1] = val;
+    return 0;
+}
+
+uint64_t OpenFilesTable::getCursor(FHANDLE fhandle) const {
+    if(!isTaken(fhandle))return -1;
+    return table[fhandle][1];
+}
+
+
+
 
 
 

@@ -17,6 +17,7 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
 ### Argument Conventions
 
 - `$arg_name$` - Required arguments
+    - `$path$` can be relative or absolute.
 - `[arg_name]` - Optional arguments
 
 ---
@@ -32,40 +33,48 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
   Print the directory tree starting from the root.
 
 - **`cd $path$`**  
-  Change directory.  
-  `$path$` can be relative or absolute.
+  Change directory.
 
 ---
 
 #### Manipulation
 
 - **`open $path$`**  
-  Open a file or directory.  
-  `$path$` can be relative or absolute.
+  Open a file or directory.
+
+- **`write $path$`**  
+  Writes to a file.
+
+- **`read $path$`**  
+  Read from a file.
+
+- **`eof $path$`**  
+  Returns a cursor to the end of file.
+
+- **`cursor $path$`**  
+  Returns a cursor.
+
+- **`seek $path$ cursor`**  
+  Set a cursor. Should be used in combination with `cursor` or `eof`.
 
 - **`close $path$`**  
-  Close a file or directory.  
-  `$path$` can be relative or absolute.
+  Close a file or directory.
 
 - **`rename $path$ $name$`**  
-  Rename a file or directory to `$name$`.  
-  `$path$` can be relative or absolute.
+  Rename a file or directory to `$name$`.
 
 - **`remove $path$`**  
-  Remove a file or directory.  
-  `$path$` can be relative or absolute.
+  Remove a file or directory.
 
 ---
 
 #### Other Printing
 
 - **`oft [last_entry_to_print]`**  
-  List the Open File Table (OFT).  
-  Optionally specify `last_entry_to_print`.
+  List the Open File Table (OFT).
 
 - **`fat [last_entry_to_print]`**  
-  List the File Allocation Table (FAT).  
-  Optionally specify `last_entry_to_print`.
+  List the File Allocation Table (FAT).
 
 - **`exit`**  
   Quit the console.

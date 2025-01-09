@@ -3,12 +3,19 @@
 
 class File {
 public:
+    int seek(uint16_t pos);
+
+    int32_t write(const char *data, size_t data_size);
 
     static int rename(const char *path, const char *name);
 
     static int remove(const char *path);
 
     File(const char *path, size_t size);
+
+    int32_t getEOF() const;
+
+    int32_t getCursor() const;
 
     // copy
     //File(const File&);
