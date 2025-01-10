@@ -46,7 +46,17 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
   Writes to a file.
 
 - **`read $path$`**  
-  Read from a file.
+  Read from a file.\
+  Here is a correct way to **read all data** from an **opened** file.
+  ```
+   auto eof = f->getEOF();                  // data count/end of file cursor
+   if(eof < 0)return -1;                    // error: file not opened
+   char *data = new char[eof + 1]{0};       // + 1 for null terminator
+   f->seek(0);                              // set cursor to file start
+   f->read(data, eof); 
+   std::cout << data;                       // print data
+   delete[] data; 
+  ```
 
 - **`eof $path$`**  
   Returns a cursor to the end of file.
