@@ -48,8 +48,7 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
 
 #### Manipulation
 
-- **`open $path$`**
-
+- **`open $path$`**\
   Create a file or directory if doesn't exist.
     - If the file exists, it will take an OFT entry.
     - Note that if the directory exists and `open` is called, it will return an error.
