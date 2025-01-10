@@ -48,7 +48,8 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
 - **`read $path$`**  
   Read from a file.\
   Here is the correct way to **read all data** from an **opened** file.
-  ```
+  ```C++
+   // f is pointer to a file
    auto eof = f->getEOF();                  // data count/end of file cursor
    if(eof < 0)return -1;                    // error: file not opened
    char *data = new char[eof + 1]{0};       // + 1 for null terminator
