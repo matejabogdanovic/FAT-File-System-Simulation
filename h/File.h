@@ -5,6 +5,8 @@ class File {
 public:
     int seek(uint16_t pos);
 
+    int32_t read(char *data, size_t data_size);
+
     int32_t write(const char *data, size_t data_size);
 
     static int rename(const char *path, const char *name);

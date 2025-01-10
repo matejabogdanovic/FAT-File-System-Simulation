@@ -123,6 +123,8 @@ private:
 
     int fseek(FHANDLE file, uint16_t pos);
 
+    int32_t f_read_or_write(FHANDLE file, size_t count, char *read_buf, const char *write_buf);
+
     int32_t fwrite(FHANDLE file, size_t count, const char *data);
 
     /**

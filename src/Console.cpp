@@ -148,7 +148,29 @@ int Console::cmdWrite(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdRead(char *args1, char *args2, char *args3) {
-    return 0;
+    if(!args1 || !args2 || args3)return -1;
+    // if(atoi(args2) <= 0)return -2;
+    int count = atoi(args2);
+    FHANDLE handle = FileSystem::get().getFileHandle(args1);
+    if(handle < 0) {
+        std::cout << "File not opened.\n";
+        return 0;
+    }
+    if(count < 0) {
+        uint16_t eof = 0;
+        FileSystem::get().feof(handle, &eof);
+        count = eof;
+    }
+    char *data = new char[count + 1]{0};
+    auto ret = FileSystem::get().fread(handle, count, data);
+    if(ret >= 0) {
+        // data[ret] = 0;
+        std::cout << "Reading: ";
+        std::cout << data << std::endl;
+        std::cout << "Read: " << std::dec << ret << std::endl;
+    }
+    delete[] data;
+    return ret;
 }
 
 int Console::cmdEof(char *args1, char *args2, char *args3) {
@@ -186,8 +208,8 @@ int Console::cmdSeek(char *args1, char *args2, char *args3) {
         std::cout << "File not opened.\n";
         return 0;
     }
-    FileSystem::get().fseek(handle, (uint16_t) atoi(args2));
-    return 0;
+
+    return FileSystem::get().fseek(handle, (uint16_t) atoi(args2));;
 }
 
 int Console::cmdClose(char *args1, char *args2, char *args3) {

@@ -180,7 +180,7 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT *extension,
     strcpy(path_copy, path);
     if(getFileName(path_copy, extension, &path_len, filename) < 0)
         return Inode::Status::ERROR_INVALID_PATH_NAME; // invalid name
-    std::cout << "FILE EXTENSION IS: " << file_ext_str[(*extension)] << std::endl;
+    //std::cout << "FILE EXTENSION IS: " << file_ext_str[(*extension)] << std::endl;
     // ================ start search
     bool is_relative_path = (path[0] != '/');
     *node = (!is_relative_path ? root : getWorkingDirectory());
@@ -326,20 +326,17 @@ int FileSystem::fseek(FHANDLE file, uint16_t pos) {
     if(!node || node->fcb->ext != MB //|| !node->isOpened()
             )
         return -2;
-    return oft.setCursor(file, pos);
+
+    uint16_t eof;
+    feof(file, &eof);
+
+    if(pos > eof)pos = eof; // can't set cursor behind end of file
+
+    return oft.setCursor(file, pos);;
 }
 
-int FileSystem::fread(FHANDLE file, size_t count, char *buf) {
-    if(file < 0 || count == 0 || !buf)return -1;
-    auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext != MB //|| !node->isOpened()
-            )
-        return -2;
-    return 0;
-}
-
-int32_t FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
-    if(file < 0 || !data)return -1;
+int32_t FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, const char *write_buf) {
+    if(file < 0 || (read_buf && write_buf) || (!read_buf && !write_buf))return -1;
     if(count == 0)return 0;
 
     auto node = (Inode *) oft.getInodeAddress(file);
@@ -347,50 +344,80 @@ int32_t FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
             )
         return -2;
 
+    uint16_t eof = 0;
+    feof(file, &eof);
     uint64_t cursor = oft.getCursor(file);
     adisk_t data_block = node->fcb->data_block;
     // move wanted data block
     for(int i = 0; data_block != 0 && i < cursor / BLOCK_SZ; ++i) {
         data_block = FAT::getNextBlock(data_block);
     }
-    size_t to_write_cnt = 0, written_cnt = 0, remain_cnt = count;
+    size_t to_process = 0, processed_cnt = 0, remain_cnt = count;
+
+    if(read_buf && (cursor + count > eof)) {
+        remain_cnt = eof - cursor;
+    }
     while(data_block != 0 && remain_cnt != 0) {
-        // calculate size to write
+        // calculate size to read or write
+
         if(remain_cnt <= BLOCK_SZ - cursor % BLOCK_SZ) { // falls into this block
-            to_write_cnt = remain_cnt; // write until buf[cursor + cnt]
+            to_process = remain_cnt; // write until buf[cursor + cnt]
         } else {
-            to_write_cnt = BLOCK_SZ - cursor % BLOCK_SZ; // write until buf[255]
+            to_process = BLOCK_SZ - cursor % BLOCK_SZ; // write until buf[255]
         }
+
         block_t buf = {0};
         HDisk::get().readBlock(buf, data_block);
 
-        memcpy(buf + cursor % BLOCK_SZ,
-               data + written_cnt,
-               to_write_cnt);
+        if(read_buf) {// reading
+            memcpy(read_buf + processed_cnt,
+                   buf + cursor % BLOCK_SZ,
+                   to_process);
+        } else {// writing
+            memcpy(buf + cursor % BLOCK_SZ,
+                   write_buf + processed_cnt,
+                   to_process);
+            HDisk::get().writeBlock(buf, data_block);
+        }
+
 
         PrintHex::printBlock(buf, BLOCK_SZ, 16);
         std::cout << std::endl;
 
-        HDisk::get().writeBlock(buf, data_block);
-
-
-        written_cnt += to_write_cnt;
-        remain_cnt -= to_write_cnt;
-        oft.moveCursor(file, to_write_cnt);
+        processed_cnt += to_process;
+        remain_cnt -= to_process;
+        oft.moveCursor(file, to_process);
         data_block = FAT::getNextBlock(data_block); // get next block (even if remain_cnt is 0 now - will break)
 
         cursor = oft.getCursor(file);
     }
+    if(read_buf && processed_cnt > 0) {
+        read_buf[processed_cnt] = 0; // set null terminator
+    }
 
     // if cursor is larger than end of file, move end of file to cursor
-    if(written_cnt > 0 && cursor > (node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs)) {
+    if(processed_cnt > 0 && cursor > (node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs)) {
         node->fcb->end_of_file_offs = (uint8_t) cursor;
         node->fcb->end_of_file_block = cursor / BLOCK_SZ;
 
         node->changed = true;
     }
     oft.printFHANDLE(node->handle);
-    return (int32_t) written_cnt;
+    return (int32_t) processed_cnt;
+}
+
+int FileSystem::fread(FHANDLE file, size_t count, char *buf) {
+    if(file < 0 || count == 0 || !buf)return -1;
+
+
+    return f_read_or_write(file, count, buf, nullptr);
+}
+
+int32_t FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
+    if(file < 0 || !data)return -1;
+    if(count == 0)return 0;
+
+    return f_read_or_write(file, count, nullptr, data);
 }
 
 int FileSystem::close(FHANDLE file) {
@@ -585,6 +612,7 @@ FHANDLE FileSystem::getFileHandle(const char *path) {
     if(!node)return -2;
     return node->handle;
 }
+
 
 
 

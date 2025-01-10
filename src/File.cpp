@@ -30,6 +30,11 @@ int File::seek(uint16_t pos) {
     return FileSystem::get().fseek(this->handle, pos);
 }
 
+int32_t File::read(char *data, size_t data_size) {
+    if(closed)return -1;
+    return FileSystem::get().fread(handle, data_size, data);
+}
+
 int32_t File::write(const char *data, size_t data_size) {
     if(closed)return -1;
     return FileSystem::get().fwrite(handle, data_size, data);
@@ -58,5 +63,6 @@ int32_t File::getCursor() const {
     if(ret < 0)return ret;
     return cursor;
 }
+
 
 

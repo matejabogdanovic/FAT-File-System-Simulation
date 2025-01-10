@@ -52,7 +52,7 @@ int main() {
     //
     File *f, *f1, *f2;
     try {
-        f = new File("file2.mb", 1);
+        f = new File("y.mb", 1);
         // f2 = new File("file2.mb", 1);
         // f1 = new File("/C", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
@@ -61,15 +61,13 @@ int main() {
         printBlocks();
         return -1;
     }
-    const char *data = "123";
-    //for(int i = 0; i < BLOCK_SZ * 2 - 2; ++i) {
-    //     data[i] = '6';
-    // }
-
+    auto eof = f->getEOF();
+    if(eof < 0)return -1;
+    char *data = new char[eof + 1]{0}; // + 1 for null terminator
     f->seek(0);
-    std::cout << f->write(data, strlen(data));
-    f->seek(f->getEOF());
-    std::cout << f->write(data, strlen(data));
+    std::cout << f->read(data, f->getEOF());
+    std::cout << data;
+    delete[] data;
 
     // std::cout << f->write(data, strlen(data));
     // std::cout << f->write(data, strlen(data));
