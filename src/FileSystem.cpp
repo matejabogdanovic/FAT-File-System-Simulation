@@ -383,7 +383,7 @@ int32_t FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
     }
 
     // if cursor is larger than end of file, move end of file to cursor
-    if(cursor > (node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs)) {
+    if(written_cnt > 0 && cursor > (node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs)) {
         node->fcb->end_of_file_offs = (uint8_t) cursor;
         node->fcb->end_of_file_block = cursor / BLOCK_SZ;
 

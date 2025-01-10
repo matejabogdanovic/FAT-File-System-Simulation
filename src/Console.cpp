@@ -85,7 +85,7 @@ int Console::cmdHelp(char *args1, char *args2, char *args3) {
               << "'read $path$' - read from a file\n"
               << "'eof $path$' - returns a cursor to the end of file\n"
               << "'cursor $path$' - returns a cursor\n"
-              << "'seek $path$ $cursor$' - set a cursor; should be used in combination with 'cursor' or 'eof';\n"
+              << "'seek $path$ $cursor$' - set a cursor; should be used in combination with 'cursor' or 'eof'\n"
               << "'rename $path$ $name$' - rename file/directory to $name$\n"
               << "'remove $path$' - quit console\n"
               << "'oft [last_entry_to_print]' - list oft\n"
