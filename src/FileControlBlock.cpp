@@ -56,10 +56,12 @@ void FileControlBlock::linkFCBs(FCB *fcb, FCB *prev_fcb,
         prev_fcb->child = fcb->fcb_block;
     }
     // change parents or brothers fcb TODO change only 1/8th not whole block
-    block_t blk = {0};
-    HDisk::get().readBlock(blk, prev_fcb->fcb_block);
-    PrintHex::printBlock(blk, BLOCK_SZ, 16);
-    std::cout << std::endl;
+    /*
+     block_t blk = {0};
+     HDisk::get().readBlock(blk, prev_fcb->fcb_block);
+     PrintHex::printBlock(blk, BLOCK_SZ, 16);
+     std::cout << std::endl;
+     */
 }
 
 // todo change to 1/8th

@@ -39,8 +39,8 @@ private:
      * @brief Tries to allocate blocks for fcb and data.
      * @return
      */
-    static int allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
-                                 adisk_t *fcb_block = nullptr);
+    static int allocateInodeSpace(adisk_t *data_block, block_cnt_t data_size,
+                                  adisk_t *fcb_block);
 
     /**
      * @brief Frees \p num of blocks.

@@ -38,7 +38,7 @@ int OpenFilesTable::set(uint64_t inode_address, uint64_t cursor) {
     table[entry][0] = inode_address;
     table[entry][1] = cursor;
 
-    OpenFilesTable::printOFT(31);
+    //OpenFilesTable::printOFT(31);
     return entry;
 }
 

@@ -73,21 +73,33 @@ int Console::cmdHelp(char *args1, char *args2, char *args3) {
     std::cout << "=================================================================\n"
               << "Help arrived! Check out these sick commands!\n"
               << "$arg_name$ - required arguments\n"
-              << "--->$path$ can be relative or absolute"
+              << "\t- $path$ can be relative or absolute\n"
               << "[arg_name] - optional arguments\n"
               << "=================================================================\n"
               << "'exit' - quit console\n"
+              << "-----------------------DIRECTORY TRAVERSAL-----------------------\n"
               << "'cd $path$' - change directory\n"
               << "'ls' - list current directory files\n"
               << "'tree root' - print tree starting from root\n"
-              << "'open $path$' - open file/directory\n"
+              << "-----------------FILE and DIRECTORY MANIPULATION-----------------\n"
+              << "'open $path$' - create a file or directory if doesn't exist\n"
+              << "\t- if the file exists, it will take an OFT entry\n"
+              << "\t- note that if the directory exists and 'open' is called, \n"
+              << "\tit will return an error\n"
               << "'write $path$' - write to a file\n"
-              << "'read $path$' - read from a file\n"
+              << "'read $path$ [num_of_characters]' - read from a file\n"
+              << "\t- optionally specify `num_of_characters` to read\n"
+              << "\t- if not specified, it will read until the end of the file\n"
+              << "\tit behaves the same as 'read $path$ -1'\n"
               << "'eof $path$' - returns a cursor to the end of file\n"
               << "'cursor $path$' - returns a cursor\n"
-              << "'seek $path$ $cursor$' - set a cursor; should be used in combination with 'cursor' or 'eof'\n"
-              << "'rename $path$ $name$' - rename file/directory to $name$\n"
-              << "'remove $path$' - quit console\n"
+              << "'seek $path$ $cursor$' - set a cursor\n"
+              << "\t- should be used in combination with 'cursor' or 'eof'\n"
+              << "'close $path$' - close a file\n"
+              << "\t- releases the taken OFT entry\n"
+              << "'rename $path$ $name$' - rename file or directory to $name$\n"
+              << "'remove $path$' - delete a file or directory\n"
+              << "----------------------------PRINTINGS----------------------------\n"
               << "'oft [last_entry_to_print]' - list oft\n"
               << "'fat [last_entry_to_print]' - list fat\n"
               << "=================================================================\n";
@@ -124,7 +136,8 @@ int Console::cmdTree(char *args1, char *args2, char *args3) {
 
 int Console::cmdOpen(char *args1, char *args2, char *args3) {
     if(!args1 || args2 || args3)return -1;
-    int ret = FileSystem::get().open(args1, 1);
+    FHANDLE handle;
+    int ret = FileSystem::get().open(args1, 1, &handle);
     FileSystem::get().printTree();
     return ret;
 }
@@ -148,9 +161,9 @@ int Console::cmdWrite(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdRead(char *args1, char *args2, char *args3) {
-    if(!args1 || !args2 || args3)return -1;
+    if(!args1 || args3)return -1;
     // if(atoi(args2) <= 0)return -2;
-    int count = atoi(args2);
+    int count = args2 ? atoi(args2) : -1; // if not given number of characters, read all
     FHANDLE handle = FileSystem::get().getFileHandle(args1);
     if(handle < 0) {
         std::cout << "File not opened.\n";

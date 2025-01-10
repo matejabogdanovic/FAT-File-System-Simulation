@@ -13,7 +13,7 @@ public:
 
     static int remove(const char *path);
 
-    File(const char *path, size_t size);
+    File(const char *path);
 
     int32_t getEOF() const;
 
@@ -29,7 +29,6 @@ public:
 
 private:
 
-    int open(const char *path, size_t size);
 
     int close();
 

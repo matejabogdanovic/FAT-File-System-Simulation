@@ -109,11 +109,11 @@ private:
     /**
      * @brief If a file doesn't exist - creates it (allocates space for a FCB and file data using File Allocation Table,
      * links the file in a directory tree and takes an Open Files Table entry.
-     * @param path
+     * @param pathname
      * @param size
      * @return handle - entry in OFT, <0 if error
      */
-    FHANDLE open(const char *path, size_t size);
+    int open(const char *path, size_t size, FHANDLE *file);
 
     int fread(FHANDLE file, size_t count, char *buf);
 

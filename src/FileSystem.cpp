@@ -226,8 +226,8 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT *extension,
     }
 }
 
-FHANDLE FileSystem::open(const char *pathname, size_t size) {
-
+int FileSystem::open(const char *pathname, size_t size, FHANDLE *file) {
+    std::cout << "Opening.\n";
     block_cnt_t data_size = sizeToBlocks(size);
 
     // trying to find node to link current file
@@ -247,38 +247,30 @@ FHANDLE FileSystem::open(const char *pathname, size_t size) {
     if(ret != Inode::FILE_EXISTS && (!strcmp(file_name, ".") || !strcmp(file_name, "..")))return -8;
     if(strstr(file_name, " "))return -9; // can't contain blank spaces in filename
 
-    printTree();
-    std::cout << "Node name: " << file_name << std::endl;
-    if(node)
-        std::cout << "Node: " << node->fcb->name << std::endl;
-    std::cout << "Previous node: " << (prev ? prev->fcb->name : "0") << std::endl;
-    std::cout << "Previous node written: " << (node && node->previous ? node->previous->fcb->name : "0") << std::endl;
-    std::cout << "Previous is " << (is_prev_parent ? "parent\n" : "brother\n");
-    std::cout << "Logical parent is: " << (logical_parent ? logical_parent->fcb->name : "0") << std::endl;
-    if(node && node->parent)
-        std::cout << "Written logical parent is: " << node->parent->fcb->name << std::endl;
-
-    std::cout << "======Linking with ";
 
     adisk_t data_block = 0; // it's block where the data is stored
     adisk_t fcb_block = 0;
 
     if(ret == Inode::FILE_EXISTS) {
-        std::cout << "no one======\n";
-        std::cout << "ALREADY EXISTS.\n";
+        std::cout << "File found!\n";
+        if(node->fcb->ext == DIR) // can't open directory for writing
+            return -2;
+
         auto inode = (Inode *) oft.getInodeAddress(node->handle);
         if(node->isOpened() && inode == node) {
-            std::cout << "ALREADY OPENED: " << node->handle << std::endl;
-            return node->handle;
+            std::cout << "File already opened. Handle: " << node->handle << std::endl;
+            *file = node->handle;
+            return 0;
         }
     } else {
-        std::cout << (is_prev_parent ? "parent======\n" : "brother======\n");
-
-        if(FAT::allocateFileSpace(&data_block, data_size, &fcb_block) < 0) {
+        std::cout << "File doesn't exist. Allocating space for FCB and data block (if needed).\n";
+        if(FAT::allocateInodeSpace((extension == DIR ? nullptr : &data_block),
+                                   data_size,
+                                   &fcb_block) < 0) {
             delete node;
             return -1;
         }
-
+        std::cout << "Making inode and linking it to directory tree.\n";
         node = new Inode(new FileControlBlock::FCB(file_name, extension, data_size, data_block, fcb_block));
 
         // link FCBs on disk
@@ -288,22 +280,21 @@ FHANDLE FileSystem::open(const char *pathname, size_t size) {
         Inode::linkInodes(node, prev, is_prev_parent, logical_parent);
     }
 
+    if(node->fcb->ext == DIR) return 1;
 
-    // usually we would need FCB address to write in OFT but since it's write back, we will directly write in data block
-
-    //if(fcb->ext == DIR)return -69; // todo can't open oft entry for directory + dont allocate data block etc
-    FHANDLE handle = oft.set(
+    std::cout << "Taking OFT entry.\n";
+    *file = oft.set(
             (uint64_t) node, node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs);
 
-    node->open(handle);
+    node->open(*file);
 
-    return handle;
+    return 0;
 }
 
 int FileSystem::feof(FHANDLE file, uint16_t *eof_cursor) {
     if(file < 0 || !eof_cursor)return -1;// check if file is opened
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+    if(!node || node->fcb->ext == DIR //|| !node->isOpened()
             )
         return -2;
     *eof_cursor = node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs;
@@ -313,7 +304,7 @@ int FileSystem::feof(FHANDLE file, uint16_t *eof_cursor) {
 int FileSystem::fcursor(FHANDLE file, uint16_t *file_cursor) {
     if(file < 0 || !file_cursor)return -1;// check if file is opened
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+    if(!node || node->fcb->ext == DIR  //|| !node->isOpened()
             )
         return -2;
     *file_cursor = oft.getCursor(file);; // get file cursor
@@ -323,7 +314,7 @@ int FileSystem::fcursor(FHANDLE file, uint16_t *file_cursor) {
 int FileSystem::fseek(FHANDLE file, uint16_t pos) {
     if(file < 0)return -1; // check if file is opened
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext != MB //|| !node->isOpened()
+    if(!node || node->fcb->ext == DIR  //|| !node->isOpened()
             )
         return -2;
 
@@ -340,7 +331,7 @@ int32_t FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, 
     if(count == 0)return 0;
 
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext != MB// || !node->isOpened()
+    if(!node || node->fcb->ext == DIR // || !node->isOpened()
             )
         return -2;
 
@@ -407,8 +398,8 @@ int32_t FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, 
 }
 
 int FileSystem::fread(FHANDLE file, size_t count, char *buf) {
-    if(file < 0 || count == 0 || !buf)return -1;
-
+    if(file < 0 || !buf)return -1;
+    if(count == 0)return 0;
 
     return f_read_or_write(file, count, buf, nullptr);
 }
@@ -488,9 +479,11 @@ void FileSystem::removeRecursive(Inode *start) {
     if(start == getWorkingDirectory())
         setWorkingDirectory(start->parent);
 
-    FAT::releaseBlocks(start->fcb->data_block, start->fcb->data_size);
+    if(start->fcb->ext != DIR)
+        FAT::releaseBlocks(start->fcb->data_block, start->fcb->data_size);
+
     FAT::releaseBlocks(start->fcb->fcb_block, 1);
-    std::cout << std::dec << close(start);
+    // std::cout << std::dec << close(start);
     delete start;
 }
 
@@ -502,7 +495,8 @@ int FileSystem::remove(const char *path) {
     if(node == getWorkingDirectory())
         setWorkingDirectory(node->parent);
     // deallocate this node
-    FAT::releaseBlocks(node->fcb->data_block, node->fcb->data_size);
+    if(node->fcb->ext != DIR)
+        FAT::releaseBlocks(node->fcb->data_block, node->fcb->data_size);
     FAT::releaseBlocks(node->fcb->fcb_block, 1);
 
     close(node);
@@ -511,10 +505,7 @@ int FileSystem::remove(const char *path) {
     Inode::unlinkInode(node);
 
     delete node;
-
-    // to prevent deleting directory you are already in
-    // setWorkingDirectory(root);
-
+    std::cout << "Removed.\n";
     return 0;
 }
 

@@ -52,7 +52,7 @@ int main() {
     //
     File *f, *f1, *f2;
     try {
-        f = new File("y.mb", 1);
+        f = new File("y.mb");
         // f2 = new File("file2.mb", 1);
         // f1 = new File("/C", FILE_EXT::DIR, 1);
         //f2 = new File("/", FILE_EXT::MB, 1);
@@ -81,7 +81,7 @@ int main() {
     // std::cout << "Removing:\n" << FileSystem::get().remove("dir/f", FILE_EXT::MB) << std::endl;
     // delete f2;
 
-    printBlocks();
+    // printBlocks();
 
 
     return 1;

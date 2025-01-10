@@ -60,9 +60,9 @@ void FAT::releaseBlocks(adisk_t start, block_cnt_t num) {
 
     while(table[free_blocks_tail])
         free_blocks_tail = table[free_blocks_tail];
-    PrintHex::print(free_blocks_head, "Free Blocks Head (hex): ");
-    PrintHex::print(free_blocks_tail, "Free Blocks Tail (hex): ");
-    std::cout << std::endl;
+    // PrintHex::print(free_blocks_head, "Free Blocks Head (hex): ");
+    // PrintHex::print(free_blocks_tail, "Free Blocks Tail (hex): ");
+    // std::cout << std::endl;
 }
 
 void FAT::clearFAT() {
@@ -81,8 +81,8 @@ void FAT::clearFAT() {
     HDisk::get().writeBlock(control, CONTROL_BLK);
 }
 
-int FAT::allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
-                           adisk_t *fcb_block) {
+int FAT::allocateInodeSpace(adisk_t *data_block, block_cnt_t data_size,
+                            adisk_t *fcb_block) {
 
     if(fcb_block != nullptr) {
         // allocate fcb block
@@ -92,12 +92,14 @@ int FAT::allocateFileSpace(adisk_t *data_block, block_cnt_t data_size,
         }
     }
 
-    // allocate data blocks
-    *data_block = FAT::takeBlocks(data_size);
-    if(!(*data_block)) {// no space for data
-        if(fcb_block != nullptr)
-            FAT::releaseBlocks(*fcb_block, 1);
-        return -2;
+    if(data_block != nullptr) {
+        // allocate data blocks
+        *data_block = FAT::takeBlocks(data_size);
+        if(!(*data_block)) {// no space for data
+            if(fcb_block != nullptr)
+                FAT::releaseBlocks(*fcb_block, 1);
+            return -2;
+        }
     }
     return 0;
 }

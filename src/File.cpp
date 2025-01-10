@@ -2,15 +2,12 @@
 #include "../h/FileSystem.h"
 #include <cstring>
 
-File::File(const char *path, size_t size) {
-    handle = open(path, size);
-    if(handle < 0)throw handle;
-}
+File::File(const char *path) {
+    int ret = FileSystem::get().open(path, 1, &handle);
 
-int File::open(const char *path, size_t size) {
-    if(size == 0 || size > BLOCK_SZ * FAT_SZ)return -2;
+    if(ret < 0)throw ret;
 
-    return FileSystem::get().open(path, size);
+    if(ret == 1)this->closed = true; // file is directory
 }
 
 int File::close() {
