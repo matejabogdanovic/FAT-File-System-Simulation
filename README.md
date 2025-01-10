@@ -47,7 +47,7 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
 
 - **`read $path$`**  
   Read from a file.\
-  Here is a correct way to **read all data** from an **opened** file.
+  Here is the correct way to **read all data** from an **opened** file.
   ```
    auto eof = f->getEOF();                  // data count/end of file cursor
    if(eof < 0)return -1;                    // error: file not opened
