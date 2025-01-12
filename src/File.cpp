@@ -7,7 +7,7 @@ File::File(const char *path) {
 
     if(ret < 0)throw ret;
 
-    if(ret == 1)this->closed = true; // file is directory
+    if(ret == OK_FILE_IS_DIRECTORY)this->closed = true; // so can't perform file operations on directory
 }
 
 int File::close() {
@@ -27,14 +27,14 @@ int File::seek(uint16_t pos) {
     return FileSystem::get().fseek(this->handle, pos);
 }
 
-int32_t File::read(char *data, size_t data_size) {
+int File::read(char *data, size_t count) {
     if(closed)return -1;
-    return FileSystem::get().fread(handle, data_size, data);
+    return FileSystem::get().fread(handle, count, data);
 }
 
-int32_t File::write(const char *data, size_t data_size) {
+int File::write(const char *data, size_t count) {
     if(closed)return -1;
-    return FileSystem::get().fwrite(handle, data_size, data);
+    return FileSystem::get().fwrite(handle, count, data);
 }
 
 int File::rename(const char *path, const char *name) {
@@ -45,7 +45,7 @@ int File::remove(const char *path) {
     return FileSystem::get().remove(path);
 }
 
-int32_t File::getEOF() const {
+int File::getEOF() const {
     if(closed)return -1;
     uint16_t eof = 0;
     auto ret = FileSystem::get().feof(this->handle, &eof);
@@ -53,7 +53,7 @@ int32_t File::getEOF() const {
     return eof;
 }
 
-int32_t File::getCursor() const {
+int File::getCursor() const {
     if(closed)return -1;
     uint16_t cursor = 0;
     auto ret = FileSystem::get().fcursor(this->handle, &cursor);

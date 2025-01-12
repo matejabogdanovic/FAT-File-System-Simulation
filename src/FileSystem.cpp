@@ -18,7 +18,7 @@ int FileSystem::init() {
     std::cout << "======Loading Tree FINISHED======\n";
     setWorkingDirectory(root);
 
-    return 0;
+    return OK;
 }
 
 FileSystem::FileSystem() {
@@ -142,12 +142,12 @@ struct NeededFile {
 };
 
 #define moveRight(status, previous, node)\
-status = Inode::Status::LINK_WITH_BROTHER;\
+status = InodeStatus::LINK_WITH_BROTHER;\
 previous = node;\
 node = node->bro;
 
 #define moveDown(status, previous, node, logical_parent)\
-status = Inode::Status::LINK_WITH_PARENT;\
+status = InodeStatus::LINK_WITH_PARENT;\
 previous = node;\
 logical_parent = previous;\
 node = node->child;
@@ -157,35 +157,35 @@ node = node->parent;\
 logical_parent = node->parent;
 
 // if FILE EXISTS, previous, status and logical parent might not be consistent
-Inode::Status FileSystem::searchTree(const char *path, FILE_EXT *extension,
-                                     Inode::Status *status, Inode **previous, Inode **logical_parent,
-                                     Inode **node, char *filename) {
+int FileSystem::searchTree(const char *path, FILE_EXT *extension,
+                           InodeStatus *status, Inode **previous, Inode **logical_parent,
+                           Inode **node, char *filename) {
     //  ================ check args
-    if(!status || !previous || !node)return Inode::Status::ERROR_INVALID_ARGS;
+    if(!status || !previous || !node)return ReturnStatus::ERROR_INVALID_ARGS;
     // check if wanted directory is root
     if(!strcmp(path, "/")) {
         *node = root;
         *extension = DIR;
         *previous = nullptr;
         *logical_parent = nullptr;
-        *status = Inode::Status::LINK_WITH_PARENT;
+        *status = InodeStatus::LINK_WITH_PARENT;
         return *status;
     }
     size_t path_len = strlen(path);
     // invalid path name length
-    if(path_len > PATHNAME_SZ) return Inode::Status::ERROR_INVALID_PATH_NAME;
+    if(path_len > PATHNAME_SZ) return ReturnStatus::ERROR_INVALID_PATH_NAME;
 
     //  ================  get file name - TODO check path name for ex ////..// invalid - is it a feature :)
     char path_copy[PATHNAME_SZ + 1] = {0};
     strcpy(path_copy, path);
     if(getFileName(path_copy, extension, &path_len, filename) < 0)
-        return Inode::Status::ERROR_INVALID_PATH_NAME; // invalid name
+        return ReturnStatus::ERROR_INVALID_PATH_NAME; // invalid name
     //std::cout << "FILE EXTENSION IS: " << file_ext_str[(*extension)] << std::endl;
     // ================ start search
     bool is_relative_path = (path[0] != '/');
     *node = (!is_relative_path ? root : getWorkingDirectory());
     *logical_parent = *previous = (*node)->parent;
-    *status = Inode::Status::LINK_WITH_PARENT;
+    *status = InodeStatus::LINK_WITH_PARENT;
     int i = 0;
     while(true) {
         NeededFile needed_file = {strtok((i++) ? NULL : path_copy, "/")};
@@ -193,25 +193,25 @@ Inode::Status FileSystem::searchTree(const char *path, FILE_EXT *extension,
         // ===================================================== SWITCH by NAME
         if(!strcmp(needed_file.name, ".")) { // =============== CASE .
             if(is_needed_file_last)
-                return Inode::Status::FILE_EXISTS;
+                return InodeStatus::FILE_EXISTS;
         } else if(!strcmp(needed_file.name, "..")) { // ======= CASE ..
             if((*node)->parent) { // if parent exists
                 moveUp((*node), (*logical_parent))
                 // *previous = *is_prev_parent = nullptr; // values don't matter
             }
             if(is_needed_file_last)
-                return Inode::Status::FILE_EXISTS;
+                return InodeStatus::FILE_EXISTS;
         } else { // =========================================== CASE dir or file
             moveDown((*status), (*previous), (*node), (*logical_parent))
             // moving through brothers until a match is found or not
             while(true) {
                 if(!(*node))  // is null
-                    return is_needed_file_last ? (*status) : Inode::Status::ERROR_INVALID_PATH_NAME;
+                    return is_needed_file_last ? (*status) : ReturnStatus::ERROR_INVALID_PATH_NAME;
                 // is not null
                 if(is_needed_file_last) {
                     if((*node)->fcb->ext == *extension &&
                        !strcmp((*node)->fcb->name, needed_file.name)) {
-                        return Inode::Status::FILE_EXISTS; // a match is found
+                        return InodeStatus::FILE_EXISTS; // a match is found
                     }
                     moveRight((*status), (*previous), (*node))
                 } else {
@@ -232,35 +232,36 @@ int FileSystem::open(const char *pathname, size_t size, FHANDLE *file) {
 
     // trying to find node to link current file
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
+    InodeStatus linking_status;
     FILE_EXT extension;
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(pathname, &extension,
-                                               &is_prev_parent,
-                                               &prev, &logical_parent, &node,
-                                               file_name);
-    if(node == root)return -9;// can't open root
+    int ret = FileSystem::searchTree(pathname, &extension,
+                                     &linking_status,
+                                     &prev, &logical_parent, &node,
+                                     file_name);
+
+    if(node == root)return ERROR_INVALID_PATH_NAME;// can't open root
     if(ret < 0)
         return ret;
-    if(ret != Inode::FILE_EXISTS && (!strcmp(file_name, ".") || !strcmp(file_name, "..")))return -8;
-    if(strstr(file_name, " "))return -9; // can't contain blank spaces in filename
+    if(ret != FILE_EXISTS && (!strcmp(file_name, ".") || !strcmp(file_name, "..")))return ERROR_INVALID_NAME;
+    if(strstr(file_name, " "))return ERROR_INVALID_NAME; // can't contain blank spaces in filename
 
 
     adisk_t data_block = 0; // it's block where the data is stored
     adisk_t fcb_block = 0;
 
-    if(ret == Inode::FILE_EXISTS) {
+    if(ret == FILE_EXISTS) {
         std::cout << "File found!\n";
         if(node->fcb->ext == DIR) // can't open directory for writing
-            return -2;
+            return ERROR_INVALID_OPERATION;
 
         auto inode = (Inode *) oft.getInodeAddress(node->handle);
         if(node->isOpened() && inode == node) {
             std::cout << "File already opened. Handle: " << node->handle << std::endl;
             *file = node->handle;
-            return 0;
+            return OK;
         }
     } else {
         std::cout << "File doesn't exist. Allocating space for FCB and data block (if needed).\n";
@@ -268,19 +269,19 @@ int FileSystem::open(const char *pathname, size_t size, FHANDLE *file) {
                                    data_size,
                                    &fcb_block) < 0) {
             delete node;
-            return -1;
+            return ERROR_NO_DISK_SPACE;
         }
         std::cout << "Making inode and linking it to directory tree.\n";
         node = new Inode(new FileControlBlock::FCB(file_name, extension, data_size, data_block, fcb_block));
 
         // link FCBs on disk
-        FileControlBlock::linkFCBs(node->fcb, prev->fcb, is_prev_parent);
+        FileControlBlock::linkFCBs(node->fcb, prev->fcb, linking_status == LINK_WITH_PARENT);
 
         // link tree nodes
-        Inode::linkInodes(node, prev, is_prev_parent, logical_parent);
+        Inode::linkInodes(node, prev, linking_status == LINK_WITH_PARENT, logical_parent);
     }
 
-    if(node->fcb->ext == DIR) return 1;
+    if(node->fcb->ext == DIR) return OK_FILE_IS_DIRECTORY;
 
     std::cout << "Taking OFT entry.\n";
     *file = oft.set(
@@ -288,58 +289,59 @@ int FileSystem::open(const char *pathname, size_t size, FHANDLE *file) {
 
     node->open(*file);
 
-    return 0;
+    return OK;
 }
 
 int FileSystem::feof(FHANDLE file, uint16_t *eof_cursor) {
-    if(file < 0 || !eof_cursor)return -1;// check if file is opened
+    if(file < 0)return ERROR_FILE_NOT_OPENED;
+    if(!eof_cursor)return ERROR_INVALID_ARGS;// check if file is opened
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext == DIR //|| !node->isOpened()
-            )
-        return -2;
+    if(!node)return ERROR_INVALID_ARGS;
+    if(node->fcb->ext == DIR)return ERROR_INVALID_OPERATION;
+
     *eof_cursor = node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs;
-    return 0;
+    return OK;
 }
 
 int FileSystem::fcursor(FHANDLE file, uint16_t *file_cursor) {
-    if(file < 0 || !file_cursor)return -1;// check if file is opened
+    if(!file_cursor)return ERROR_INVALID_ARGS;
+    if(file < 0)return ERROR_FILE_NOT_OPENED;
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext == DIR  //|| !node->isOpened()
-            )
-        return -2;
+    if(!node)return ERROR_INVALID_ARGS;
+    if(node->fcb->ext == DIR)return ERROR_INVALID_OPERATION;
+
     *file_cursor = oft.getCursor(file);; // get file cursor
-    return 0;
+    return OK;
 }
 
 int FileSystem::fseek(FHANDLE file, uint16_t pos) {
-    if(file < 0)return -1; // check if file is opened
+    if(file < 0)return ERROR_FILE_NOT_OPENED; // check if file is opened
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext == DIR  //|| !node->isOpened()
-            )
-        return -2;
+    if(!node)return ERROR_INVALID_ARGS;
+    if(node->fcb->ext == DIR)return ERROR_INVALID_OPERATION;
 
     uint16_t eof;
     feof(file, &eof);
 
     if(pos > eof)pos = eof; // can't set cursor behind end of file
 
-    return oft.setCursor(file, pos);;
+    return oft.setCursor(file, pos);
 }
 
-int32_t FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, const char *write_buf) {
-    if(file < 0 || (read_buf && write_buf) || (!read_buf && !write_buf))return -1;
+int FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, const char *write_buf) {
+    if(file < 0)return ERROR_FILE_NOT_OPENED;
+    if((read_buf && write_buf) || (!read_buf && !write_buf))return ERROR_INVALID_ARGS;
     if(count == 0)return 0;
 
     auto node = (Inode *) oft.getInodeAddress(file);
-    if(!node || node->fcb->ext == DIR // || !node->isOpened()
-            )
-        return -2;
+    if(!node)return ERROR_INVALID_ARGS;
+    if(node->fcb->ext == DIR)return ERROR_INVALID_OPERATION;
 
     uint16_t eof = 0;
     feof(file, &eof);
     uint64_t cursor = oft.getCursor(file);
     adisk_t data_block = node->fcb->data_block;
-    // move wanted data block
+    // move to wanted data block
     for(int i = 0; data_block != 0 && i < cursor / BLOCK_SZ; ++i) {
         data_block = FAT::getNextBlock(data_block);
     }
@@ -386,7 +388,7 @@ int32_t FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, 
         read_buf[processed_cnt] = 0; // set null terminator
     }
 
-    // if cursor is larger than end of file, move end of file to cursor
+    // if cursor is larger than end of file, move end of file to cursor (more data is written)
     if(processed_cnt > 0 && cursor > (node->fcb->end_of_file_block * BLOCK_SZ + node->fcb->end_of_file_offs)) {
         node->fcb->end_of_file_offs = (uint8_t) cursor;
         node->fcb->end_of_file_block = cursor / BLOCK_SZ;
@@ -394,18 +396,20 @@ int32_t FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, 
         node->changed = true;
     }
     oft.printFHANDLE(node->handle);
-    return (int32_t) processed_cnt;
+    return (int) processed_cnt;
 }
 
 int FileSystem::fread(FHANDLE file, size_t count, char *buf) {
-    if(file < 0 || !buf)return -1;
+    if(file < 0)return ERROR_FILE_NOT_OPENED;
+    if(!buf)return ERROR_INVALID_ARGS;
     if(count == 0)return 0;
 
     return f_read_or_write(file, count, buf, nullptr);
 }
 
-int32_t FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
-    if(file < 0 || !data)return -1;
+int FileSystem::fwrite(FHANDLE file, size_t count, const char *data) {
+    if(file < 0)return ERROR_FILE_NOT_OPENED;
+    if(!data)return ERROR_INVALID_ARGS;
     if(count == 0)return 0;
 
     return f_read_or_write(file, count, nullptr, data);
@@ -423,7 +427,7 @@ int FileSystem::close(FHANDLE file) {
     std::cout << "OFT entry freed.\n";
 
     std::cout << "=====CLOSED: " << file << "=====\n";
-    return 0;
+    return OK;
 }
 
 int FileSystem::close(const char *pathname) {
@@ -431,7 +435,7 @@ int FileSystem::close(const char *pathname) {
     Inode *node = getExistingFile(pathname);
 
     if(!node || node == root)
-        return -1;
+        return ERROR_INVALID_PATH_NAME;
 
 
     return close(node);
@@ -441,21 +445,21 @@ int FileSystem::close(Inode *node) {
     if(node->isOpened()) {
         std::cout << "CLOSING: " << node->handle << std::endl;
         close(node->handle);
-        return 0;
+        return OK;
     }
-    return -2;
+    return ERROR_FILE_NOT_OPENED;
 }
 
 int FileSystem::rename(const char *path,
                        const char *name) {
     auto len = strlen(name);
-    if(len > FILENAME_SZ)return -1;
+    if(len > FILENAME_SZ)return ERROR_INVALID_NAME;
 
     Inode *node = getExistingFile(path);
     if(!node || node == root)
-        return -2;
+        return ERROR_INVALID_PATH_NAME;
 
-    if(strstr(name, ".") || strstr(name, "/")) return -3;
+    if(strstr(name, ".") || strstr(name, "/")) return ERROR_INVALID_NAME;
 
     std::cout << "Renaming " << node->fcb->name << "->" << name << std::endl;
     strcpy(node->fcb->name, name);
@@ -464,7 +468,7 @@ int FileSystem::rename(const char *path,
     // to update working directory name
     setWorkingDirectory(getWorkingDirectory());
 
-    return 0;
+    return OK;
 }
 
 void FileSystem::removeRecursive(Inode *start) {
@@ -489,7 +493,7 @@ void FileSystem::removeRecursive(Inode *start) {
 
 int FileSystem::remove(const char *path) {
     Inode *node = getExistingFile(path);
-    if(!node || node == root)return -8;
+    if(!node || node == root)return ERROR_INVALID_PATH_NAME;
 
     removeRecursive(node->child); // remove children
     if(node == getWorkingDirectory())
@@ -506,7 +510,7 @@ int FileSystem::remove(const char *path) {
 
     delete node;
     std::cout << "Removed.\n";
-    return 0;
+    return OK;
 }
 
 void FileSystem::clearRoot() {
@@ -518,22 +522,22 @@ void FileSystem::clearRoot() {
 }
 
 int FileSystem::setWorkingDirectory(Inode *dir) {
-    if(!dir || dir->fcb->ext != DIR) return -1;
+    if(!dir || dir->fcb->ext != DIR) return ERROR_INVALID_ARGS;
     working = dir;
     working_path[0] = '\0';
     if(working == root)
         strcpy(working_path, "/");
     else
         getWorkingDirectoryPathRecursive(working, working_path);
-    return 0;
+    return OK;
 }
 
 int FileSystem::setWorkingDirectory(char *path) {
     Inode *node = getExistingFile(path);
-    if(!node || node->fcb->ext != DIR)return -10;
+    if(!node || node->fcb->ext != DIR)return ERROR_INVALID_PATH_NAME;
 
-    setWorkingDirectory(node);
-    return 0;
+
+    return setWorkingDirectory(node);;
 }
 
 void FileSystem::printTree() const {
@@ -584,23 +588,23 @@ block_cnt_t FileSystem::sizeToBlocks(size_t size) {
 Inode *FileSystem::getExistingFile(const char *path) {
     // trying to find node to link current file
     Inode *prev = nullptr, *logical_parent = nullptr, *node = nullptr;
-    Inode::Status is_prev_parent;
+    InodeStatus linking_status;
     FILE_EXT extension;
     // if it's full path, start from root, else from working dir
 
     char file_name[FILENAME_SZ + 1] = {0};
-    Inode::Status ret = FileSystem::searchTree(path, &extension,
-                                               &is_prev_parent,
-                                               &prev, &logical_parent, &node,
-                                               file_name);
-    if(ret != Inode::FILE_EXISTS) return nullptr;
+    int ret = FileSystem::searchTree(path, &extension,
+                                     &linking_status,
+                                     &prev, &logical_parent, &node,
+                                     file_name);
+    if(ret != FILE_EXISTS) return nullptr;
     return node;
 }
 
 FHANDLE FileSystem::getFileHandle(const char *path) {
-    if(!path)return -1;
+    if(!path)return ERROR_INVALID_ARGS;
     Inode *node = getExistingFile(path);
-    if(!node)return -2;
+    if(!node)return ERROR_INVALID_PATH_NAME;
     return node->handle;
 }
 

@@ -88,19 +88,19 @@ uint64_t OpenFilesTable::getInodeAddress(FHANDLE fhandle) const {
 }
 
 int OpenFilesTable::moveCursor(FHANDLE fhandle, int32_t val) {
-    if(!isTaken(fhandle))return -1;
+    if(!isTaken(fhandle))return ERROR_FILE_NOT_OPENED;
     table[fhandle][1] += val;
     return 0;
 }
 
 int OpenFilesTable::setCursor(FHANDLE fhandle, int32_t val) {
-    if(!isTaken(fhandle))return -1;
+    if(!isTaken(fhandle))return ERROR_FILE_NOT_OPENED;
     table[fhandle][1] = val;
-    return 0;
+    return OK;
 }
 
 uint64_t OpenFilesTable::getCursor(FHANDLE fhandle) const {
-    if(!isTaken(fhandle))return -1;
+    if(!isTaken(fhandle))return ERROR_FILE_NOT_OPENED;
     return table[fhandle][1];
 }
 

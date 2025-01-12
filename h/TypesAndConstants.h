@@ -29,11 +29,40 @@ enum FILE_EXT : uint8_t {
 static const auto FILE_EXT_CNT = 2;
 static const char *file_ext_str[FILE_EXT_CNT] = {"dir", "mb"};
 typedef int16_t FHANDLE;
-
-
 // FCB
 
 
+enum ReturnStatus : int {
+    OK_FILE_IS_DIRECTORY = 1, // special value for open
+    OK = 0,
+    ERROR_INVALID_ARGS = -1,
+    ERROR_INVALID_PATH_NAME = -2,
+    ERROR_INVALID_NAME = -3,
+    ERROR_NO_DISK_SPACE = -4,
+    ERROR_FILE_NOT_OPENED = -5,
+    ERROR_INVALID_OPERATION = -6,
+};
+static const char *errorMessage[6] = {
+        "Error: Invalid arguments.",
+        "Error: Invalid path name.",
+        "Error: Invalid file name.",
+        "Error: No disk space available.",
+        "Error: File not opened.",
+        "Error: Invalid operation."
+};
+
+static const char *getErrorMessage(ReturnStatus status) {
+    if(status >= 0)return nullptr;
+    int index = -status - 1;
+    if(index > 5)return nullptr;
+    return errorMessage[index];
+}
+
+enum InodeStatus : int {
+    LINK_WITH_BROTHER = 1,
+    LINK_WITH_PARENT = 2,
+    FILE_EXISTS = 3
+};
 // OFT
 static const auto OFT_SZ = FAT_SZ;
 //static const uint8_t OFFS_SHIFT = sizeof(uint32_t) * 8 / 2;

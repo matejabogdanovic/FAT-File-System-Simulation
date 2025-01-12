@@ -60,16 +60,15 @@ int Console::open() {
             continue;
         }
         if(ret < 0) {
-            if(ret == -1) std::cout << "Invalid arguments." << std::endl;
-            else std::cout << "Error: " << std::dec << ret << std::endl;
+            std::cout << getErrorMessage((ReturnStatus) ret) << std::endl;
         }
     }
 
-    return 0;
+    return OK;
 }
 
 int Console::cmdHelp(char *args1, char *args2, char *args3) {
-    if(!args1 || strcmp(args1, "pls") != 0)return -1;
+    if(!args1 || strcmp(args1, "pls") != 0 || args2 || args3)return -1;
     std::cout << "=================================================================\n"
               << "Help arrived! Check out these sick commands!\n"
               << "$arg_name$ - required arguments\n"
@@ -103,39 +102,32 @@ int Console::cmdHelp(char *args1, char *args2, char *args3) {
               << "'oft [last_entry_to_print]' - list oft\n"
               << "'fat [last_entry_to_print]' - list fat\n"
               << "=================================================================\n";
-    return 0;
+    return OK;
 }
 
 /* ==================== directory traversal ==================== */
 
 int Console::cmdCd(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
-    //  if(!strcmp(args, ".."))
-    // FileSystem::get().setWDtoParent();
-    //  else if(!strcmp(args, ".")) {
-    //   continue;
-    // } else {
-    int ret = FileSystem::get().setWorkingDirectory(args1);
-    if(ret == -10)std::cout << "Invalid directory name." << std::endl;
-    return ret;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
+    return FileSystem::get().setWorkingDirectory(args1);
 }
 
 int Console::cmdLs(char *args1, char *args2, char *args3) {
-    if(args1 || args2 || args3)return -1;
+    if(args1 || args2 || args3)return ERROR_INVALID_ARGS;
     FileSystem::get().listWorkingDirectory();
-    return 0;
+    return OK;
 }
 
 int Console::cmdTree(char *args1, char *args2, char *args3) {
-    if(!args1 || strcmp(args1, "root") != 0 || args2 || args3) return -1;
+    if(!args1 || strcmp(args1, "root") != 0 || args2 || args3) return ERROR_INVALID_ARGS;
     FileSystem::get().printTree();
-    return 0;
+    return OK;
 }
 
 /* ==================== directory changing ==================== */
 
 int Console::cmdOpen(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
     FHANDLE handle;
     int ret = FileSystem::get().open(args1, 1, &handle);
     FileSystem::get().printTree();
@@ -143,11 +135,11 @@ int Console::cmdOpen(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdWrite(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
     FHANDLE handle = FileSystem::get().getFileHandle(args1);
     if(handle < 0) {
-        std::cout << "File not opened.\n";
-        return 0;
+        std::cout << getErrorMessage(ERROR_FILE_NOT_OPENED) << std::endl;
+        return OK;
     }
 
     std::cout << "Text to write: ";
@@ -161,13 +153,13 @@ int Console::cmdWrite(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdRead(char *args1, char *args2, char *args3) {
-    if(!args1 || args3)return -1;
+    if(!args1 || args3)return ERROR_INVALID_ARGS;
     // if(atoi(args2) <= 0)return -2;
     int count = args2 ? atoi(args2) : -1; // if not given number of characters, read all
     FHANDLE handle = FileSystem::get().getFileHandle(args1);
     if(handle < 0) {
-        std::cout << "File not opened.\n";
-        return 0;
+        std::cout << getErrorMessage(ERROR_FILE_NOT_OPENED) << std::endl;
+        return OK;
     }
     if(count < 0) {
         uint16_t eof = 0;
@@ -187,10 +179,11 @@ int Console::cmdRead(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdEof(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
     FHANDLE handle = FileSystem::get().getFileHandle(args1);
     if(handle < 0) {
-        std::cout << "File not opened.\n";
+        std::cout << getErrorMessage(ERROR_FILE_NOT_OPENED) << std::endl;
+        return OK;
     }
     uint16_t eof = 0;
     auto ret = FileSystem::get().feof(handle, &eof);
@@ -200,11 +193,11 @@ int Console::cmdEof(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdCursor(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
     FHANDLE handle = FileSystem::get().getFileHandle(args1);
     if(handle < 0) {
-        std::cout << "File not opened.\n";
-        return 0;
+        std::cout << getErrorMessage(ERROR_FILE_NOT_OPENED) << std::endl;
+        return OK;
     }
     uint16_t cursor = 0;
     auto ret = FileSystem::get().fcursor(handle, &cursor);
@@ -215,45 +208,45 @@ int Console::cmdCursor(char *args1, char *args2, char *args3) {
 }
 
 int Console::cmdSeek(char *args1, char *args2, char *args3) {
-    if(!args1 || !args2 || args3)return -1;
+    if(!args1 || !args2 || args3)return ERROR_INVALID_ARGS;
     FHANDLE handle = FileSystem::get().getFileHandle(args1);
     if(handle < 0) {
-        std::cout << "File not opened.\n";
-        return 0;
+        std::cout << getErrorMessage(ERROR_FILE_NOT_OPENED) << std::endl;
+        return OK;
     }
 
     return FileSystem::get().fseek(handle, (uint16_t) atoi(args2));;
 }
 
 int Console::cmdClose(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
 
     return FileSystem::get().close(args1);
 }
 
 int Console::cmdRename(char *args1, char *args2, char *args3) {
-    if(!args1 || !args2 || args3)return -1;
+    if(!args1 || !args2 || args3)return ERROR_INVALID_ARGS;
 
     return FileSystem::get().rename(args1, args2);
 }
 
 int Console::cmdRemove(char *args1, char *args2, char *args3) {
-    if(!args1 || args2 || args3)return -1;
+    if(!args1 || args2 || args3)return ERROR_INVALID_ARGS;
     return FileSystem::get().remove(args1);
 }
 
 /* ==================== other printing ==================== */
 
 int Console::cmdOft(char *args1, char *args2, char *args3) {
-    if(args2 || args3)return -1;
+    if(args2 || args3)return ERROR_INVALID_ARGS;
     FileSystem::get().oft.printOFT(args1 ? atoi(args1) : 255);
-    return 0;
+    return OK;
 }
 
 int Console::cmdFat(char *args1, char *args2, char *args3) {
-    if(args2 || args3)return -1;
+    if(args2 || args3)return ERROR_INVALID_ARGS;
     FAT::printFAT(args1 ? atoi(args1) : 255);
-    return 0;
+    return OK;
 }
 
 
