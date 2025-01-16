@@ -107,7 +107,7 @@ private:
                    Inode **node, char *filename);
 
     /**
-     * @brief  Creates a file or directory if doesn't exist.
+     * @brief  Creates a file or directory if doesn't exist. Allocates FCB and DATA blocks.
      * If the file exists, it will take an OFT entry.
      * Note that if the directory exists and `open` is called, it will raise an exception.
      * @param path path name

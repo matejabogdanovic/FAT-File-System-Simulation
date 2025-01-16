@@ -342,23 +342,25 @@ int FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, cons
     uint64_t cursor = oft.getCursor(file);
     adisk_t data_block = node->fcb->data_block;
 
-    // move to wanted data block
+    // move to data block where is the cursor
     for(int i = 0; data_block != 0 && i < cursor / BLOCK_SZ; ++i) {
-
+        // if it's writing and there is no more space in the file, extend for 1 more block
         if(write_buf && FAT::getNextBlock(data_block) == 0)
-            if(!FAT::extend(data_block, 1))
+            if(!FAT::extend(data_block, 1)) {
                 node->fcb->data_size += 1;
-
+                node->changed = true;
+            }
         data_block = FAT::getNextBlock(data_block);
     }
-    size_t to_process = 0, processed_cnt = 0, remain_cnt = count;
 
+    size_t to_process = 0, processed_cnt = 0, remain_cnt = count;
+    // cap the remain_cnt to end of file <=>
+    // it's possible to read until the end of file, but not past it
     if(read_buf && (cursor + count > eof)) {
         remain_cnt = eof - cursor;
     }
     while(data_block != 0 && remain_cnt != 0) {
         // calculate size to read or write
-
         if(remain_cnt <= BLOCK_SZ - cursor % BLOCK_SZ) { // falls into this block
             to_process = remain_cnt; // write until buf[cursor + cnt]
         } else {
@@ -387,18 +389,16 @@ int FileSystem::f_read_or_write(FHANDLE file, size_t count, char *read_buf, cons
         remain_cnt -= to_process;
         oft.moveCursor(file, to_process);
 
-        if(write_buf && (FAT::getNextBlock(data_block) == 0 && remain_cnt > 0)) { // no more file space, needs to extend
+        // no more file space, needs to extending
+        if(write_buf && (FAT::getNextBlock(data_block) == 0 && remain_cnt > 0)) {
             auto blocks_to_extend = sizeToBlocks(remain_cnt);
             if(!FAT::extend(data_block, blocks_to_extend)) {
-                std::cout << "File extended for: " << std::dec << blocks_to_extend * 256 << " chars.\n";
                 node->fcb->data_size += blocks_to_extend;
                 node->changed = true;
-            } else {
-                std::cout << "No space for remaining: " << std::dec << remain_cnt << " chars.\n";
             }
         }
 
-        data_block = FAT::getNextBlock(data_block); // get next block (even if remain_cnt is 0 now - will break)
+        data_block = FAT::getNextBlock(data_block);
         cursor = oft.getCursor(file);
     }
     if(read_buf && processed_cnt > 0) {

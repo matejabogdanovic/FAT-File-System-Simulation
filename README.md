@@ -49,12 +49,15 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
 #### Manipulation
 
 - **`open $path$`**\
-  Create a file or directory if doesn't exist.
+  Create a file or directory, if it doesn't exist, by allocating one block for FCB and one block for data.\
+  When `write` is called and there is no more space in the file, it will automatically try to allocate needed number
+  of blocks.
     - If the file exists, it will take an OFT entry.
-    - Note that if the directory exists and `open` is called, it will return an error.
+        - Note that if the directory exists and `open` is called, it will return an error.
 
 - **`write $path$`**  
-  Write to a file.
+  Write to a file. If there is no more space in the file, it will automatically try to allocate needed number
+  of blocks.
 
 - **`read $path$ [num_of_characters]`**  
   Read from a file.
@@ -68,7 +71,7 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
  // f is a pointer to the file to read from
 auto eof = f->getEOF();                  // data count/end of file cursor
 if(eof < 0)return -1;                    // error: file not opened
-char *data = new char[eof + 1]{ 0 };       // + 1 for null terminator
+char *data = new char[eof + 1]{ 0 };     // + 1 for null terminator
 f->seek(0);                              // set cursor to file start
 f->read(data, eof);
 std::cout << data;                       // print data
