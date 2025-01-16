@@ -36,6 +36,14 @@ private:
     static fat_entry_t takeBlocks(block_cnt_t num);
 
     /**
+     * @brief If possible, allocates \p num of blocks and links it with last block starting from \p start .
+     * @param start
+     * @param num
+     * @return <0 if error
+     */
+    static int extend(fat_entry_t start, block_cnt_t num);
+
+    /**
      * @brief Tries to allocate blocks for fcb and data.
      * @return
      */

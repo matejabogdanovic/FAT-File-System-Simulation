@@ -101,7 +101,7 @@ int FAT::allocateInodeSpace(adisk_t *data_block, block_cnt_t data_size,
             return -2;
         }
     }
-    return 0;
+    return OK;
 }
 
 void FAT::printFAT(fat_entry_t limit) {
@@ -114,6 +114,17 @@ void FAT::printFAT(fat_entry_t limit) {
 
 adisk_t FAT::getNextBlock(adisk_t start) {
     return table[start];
+}
+
+int FAT::extend(fat_entry_t start, block_cnt_t num) {
+    auto extended_start = FAT::takeBlocks(num);
+    if(extended_start == 0)return -1;
+    while(table[start])
+        start = table[start];
+
+    table[start] = extended_start;
+
+    return OK;
 }
 
 
