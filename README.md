@@ -53,7 +53,7 @@ Using `Console::open();` and typing `help pls`, these commands will show up.
   When `write` is called and there is no more space in the file, it will automatically try to allocate needed number
   of blocks.
     - If the file exists, it will take an OFT entry.
-        - Note that if the directory exists and `open` is called, it will return an error.
+    - Note that if the directory exists and `open` is called, it will return an error.
 
 - **`write $path$`**  
   Write to a file. If there is no more space in the file, it will automatically try to allocate needed number
