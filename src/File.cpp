@@ -5,7 +5,7 @@
 File::File(const char *path) {
     int ret = FileSystem::get().open(path, 1, &handle);
 
-    if(ret < 0)throw ret;
+    if(ret < 0)throw (int) ret;
 
     if(ret == OK_FILE_IS_DIRECTORY)this->closed = true; // so can't perform file operations on directory
 }

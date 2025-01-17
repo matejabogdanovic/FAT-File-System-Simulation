@@ -23,11 +23,12 @@
 
 
 void reset() {
-    //FileSystem::clearMemory();
+    //FileSystem::clearMemory(); // uncomment this to wipe memory and set to 0
     FileSystem::clearRoot();
     FAT::clearFAT();
 }
 
+// prints FAT, CONTROL and ROOT block
 void printBlocks() {
 
     block_t buffer;
@@ -46,17 +47,13 @@ void printBlocks() {
 }
 
 int main() {
-    //reset();
+    //reset(); // uncomment this to reset the memory
     std::cout << "File system init.\n";
-
     //
-    File *f, *f1, *f2;
+    File *f;
     try {
         f = new File("y.mb");
-        // f2 = new File("file2.mb", 1);
-        // f1 = new File("/C", FILE_EXT::DIR, 1);
-        //f2 = new File("/", FILE_EXT::MB, 1);
-    } catch(short error) {
+    } catch(int error) {
         std::cerr << "Error: " << std::dec << error;
         printBlocks();
         return -1;
@@ -66,25 +63,15 @@ int main() {
     char *data = new char[eof + 1]{0}; // + 1 for null terminator
     f->seek(0);
     std::cout << f->read(data, f->getEOF());
-    std::cout << data;
+    std::cout << data << std::endl;
     delete[] data;
-
-    // std::cout << f->write(data, strlen(data));
-    // std::cout << f->write(data, strlen(data));
-    // std::cout << f->write(data, strlen(data));
-    //std::cout << std::dec << "FILE HANDLE: " << f;
+    File::rename("./../y.mb", "file");
     delete f;
-    // delete f2;
-    //   File::rename("./../C/", DIR, "lolcina");
+
     Console::open();
     FileSystem::get().printTree();
-    // std::cout << "Removing:\n" << FileSystem::get().remove("dir/f", FILE_EXT::MB) << std::endl;
-    // delete f2;
 
-    // printBlocks();
-
-
-    return 1;
+    return OK;
 }
 
 

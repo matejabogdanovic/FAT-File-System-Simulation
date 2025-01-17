@@ -476,7 +476,18 @@ int FileSystem::rename(const char *path,
     if(!node || node == root)
         return ERROR_INVALID_PATH_NAME;
 
+
     if(strstr(name, ".") || strstr(name, "/")) return ERROR_INVALID_NAME;
+    
+    // check every brother to see if the same name exists
+    Inode *bro = node->parent->child;
+    while(bro) {
+        if(bro != node && bro->fcb->ext == node->fcb->ext && !strcmp(bro->fcb->name, name)) {
+            return ERROR_INVALID_NAME;
+        }
+        bro = bro->bro;
+    }
+
 
     std::cout << "Renaming " << node->fcb->name << "->" << name << std::endl;
     strcpy(node->fcb->name, name);
