@@ -4,7 +4,7 @@
 
 
 class HDisk {
-public:
+public: // shouldn't be public in real file system :)
 
 
     /**

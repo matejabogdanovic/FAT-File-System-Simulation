@@ -13,7 +13,7 @@ public:
     /**
      * @brief Resets root block to contain only root folder. Clears \b just the root block.
      */
-    static void clearRoot(); // temporary public
+    static void clearRoot(); // shouldn't be public in real file system :)
 
     /**
      * @brief Changes the name of a file or directory.

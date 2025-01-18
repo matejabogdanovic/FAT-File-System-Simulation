@@ -5,7 +5,10 @@
 class FileControlBlock {
 public:
     struct FCB { // 32 chars => 8 FCBs in ONE block
-
+        /*
+         * It was initial idea to store 8 FCBs in one block, so there are fields with suffix 'offs'.
+         * 'Offs' means, offset in the current block (field with no suffix), so we can find the wanted FCB in that block.
+         */
         char name[FILENAME_SZ + 1] = {0};
         FILE_EXT ext;
         block_cnt_t data_size;

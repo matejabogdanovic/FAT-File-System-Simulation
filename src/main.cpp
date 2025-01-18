@@ -1,10 +1,6 @@
-#include "../h/FileSystem.h"
-#include "../h/HDisk.h"
 #include "../h/File.h"
-#include "../h/PrintHex.h"
 #include "../h/Console.h"
 
-#include <conio.h>
 /*
 * This is a FAT simulation. Entry - 8bit, 2^8 blocks. Each block is 2^8*1B.
 * File harddisk.txt represents disk. 
@@ -13,20 +9,16 @@
 */
 
 
-// TODO: take care of 1/8th block allocation and not just from root block (LINKED ALLOCATION IN FILESYSTEM)
-// [0 1 2 3 4 5 6 7] - koristiti poslednju osminu da se vodi racuna o slobodnim osminama
-// koristiti control block da se vodi racuna o tome
-// dinamicki?
-// ======> Recimo da kazemo da maksimalno fajlova ima 256, jer 1 fajl minimalno mora zauzimati 1 ceo blok.
-// posto FCB zauzima 1/8 bloka onda nam treba 256/8 = 32 blokova. Da bi vodili racuna o slobodnim osminama
-// treba nam 8 bita odnosno jedan char_t. za 256 fajlova treba nam 256 char_t sto je jedan ceo blok.
-
-
 void reset() {
     //FileSystem::clearMemory(); // uncomment this to wipe memory and set to 0
     FileSystem::clearRoot();
     FAT::clearFAT();
 }
+
+
+// include these so printBlocks work
+#include "../h/HDisk.h"
+#include "../h/PrintHex.h"
 
 // prints FAT, CONTROL and ROOT block
 void printBlocks() {
@@ -49,7 +41,6 @@ void printBlocks() {
 int main() {
     //reset(); // uncomment this to reset the memory
     std::cout << "File system init.\n";
-    //
     File *f;
     try {
         f = new File("y.mb");
@@ -58,16 +49,22 @@ int main() {
         printBlocks();
         return -1;
     }
+    // writing
+    f->seek(0);
+    f->write("123", 3);
+    // reading the whole file
     auto eof = f->getEOF();
     if(eof < 0)return -1;
-    char *data = new char[eof + 1]{0}; // + 1 for null terminator
+    char *read_data = new char[eof + 1]{0}; // + 1 for null terminator
     f->seek(0);
-    std::cout << f->read(data, f->getEOF());
-    std::cout << data << std::endl;
-    delete[] data;
+    f->read(read_data, f->getEOF());
+    std::cout << "Data is: " << read_data << std::endl;
+    delete[] read_data;
+    // renaming
     File::rename("./../y.mb", "file");
     delete f;
 
+    // start console
     Console::open();
     FileSystem::get().printTree();
 
